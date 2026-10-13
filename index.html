@@ -1763,8 +1763,6 @@
     var dmId = ids[0] + "_" + ids[1];
     var now = Date.now();
     var updates = {};
-    updates["dms/" + dmId + "/members/" + me] = true;
-    updates["dms/" + dmId + "/members/" + fromUid] = true;
     updates["userDms/" + me + "/" + fromUid] = { dmId: dmId, name: fromName, at: now };
     updates["userDms/" + fromUid + "/" + me] = { dmId: dmId, name: displayName(), at: now };
     updates["dmRequests/" + me + "/" + fromUid] = null;
