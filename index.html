@@ -580,10 +580,14 @@
   <h1>mod dashboard</h1>
   <h2>stats</h2>
   <div id="dash-stats"><p>loading...</p></div>
+  <h2>find user</h2>
+  <input id="dash-search" type="text" maxlength="20" placeholder="search by name..." autocomplete="off">
+  <div id="dash-search-results"></div>
   <h2>give xp</h2>
   <input id="dash-xp-user" type="text" maxlength="20" placeholder="username...">
   <input id="dash-xp-amt" type="number" min="1" max="100000" placeholder="amount">
   <button id="dash-xp-btn" class="secondary">grant xp</button>
+  <button id="dash-xp-take-btn" class="secondary">take away xp</button>
   <h2>reports</h2>
   <div id="dash-reports"><p>loading...</p></div>
   <h2>banned users</h2>
@@ -1846,6 +1850,58 @@
       });
     });
   }
+  function dashTakeXp() {
+    var nameEl = document.getElementById("dash-xp-user");
+    var amtEl = document.getElementById("dash-xp-amt");
+    var name = String(nameEl.value || "").trim().toLowerCase();
+    var amt = parseInt(amtEl.value, 10);
+    if (!name) { nameEl.focus(); return; }
+    if (!(amt > 0) || amt > 100000) { amtEl.focus(); return; }
+    db.ref("users").orderByChild("name").equalTo(name).once("value", function (snap) {
+      if (!snap.exists()) { flashNotice("user not found"); return; }
+      var uid = Object.keys(snap.val())[0];
+      askConfirm("Take away " + amt + " XP from " + name + "?", function () {
+        changeXp(uid, -amt);
+        flashNotice("took away " + amt + " xp from " + name);
+        nameEl.value = ""; amtEl.value = "";
+      });
+    });
+  }
+  var dashSearchTimer = null;
+  function dashSearchUsers() {
+    var input = document.getElementById("dash-search");
+    var box = document.getElementById("dash-search-results");
+    var q = String(input.value || "").trim().toLowerCase();
+    if (q.length < 2) { box.innerHTML = ""; return; }
+    box.innerHTML = "<p>searching...</p>";
+    db.ref("users").orderByChild("name").startAt(q).endAt(q + "\uf8ff").limitToFirst(10).once("value", function (snap) {
+      var v = snap.val() || {};
+      var keys = Object.keys(v);
+      box.innerHTML = "";
+      if (!keys.length) { box.innerHTML = "<p>no matches</p>"; return; }
+      keys.forEach(function (uid) {
+        (function (u, rec) {
+          db.ref("xp/" + u).once("value", function (xsnap) {
+            var xv = xsnap.val();
+            var xpAmt = (xv && typeof xv.xp === "number") ? xv.xp : 0;
+            var b = document.createElement("button");
+            b.className = "secondary";
+            b.style.textAlign = "left";
+            b.textContent = (rec.name || "?") + " \u2014 " + xpAmt + " xp";
+            var tt = (typeof teamTagForUid === "function") ? teamTagForUid(u) : null;
+            if (tt) { b.appendChild(tt); }
+            b.onclick = function () {
+              document.getElementById("dash-xp-user").value = rec.name || "";
+              input.value = "";
+              box.innerHTML = "";
+              flashNotice("selected " + (rec.name || "?"));
+            };
+            box.appendChild(b);
+          });
+        })(uid, v[uid]);
+      });
+    });
+  }
   function loadReports() {
     var box = document.getElementById("dash-reports");
     box.innerHTML = "<p>loading...</p>";
@@ -2057,6 +2113,11 @@
     });
   }
   document.getElementById("dash-xp-btn").onclick = dashGrantXp;
+  document.getElementById("dash-xp-take-btn").onclick = dashTakeXp;
+  document.getElementById("dash-search").oninput = function () {
+    if (dashSearchTimer) { clearTimeout(dashSearchTimer); }
+    dashSearchTimer = setTimeout(dashSearchUsers, 300);
+  };
   document.getElementById("ban-add-btn").onclick = function () {
     var name = document.getElementById("ban-input").value.replace(/^\s+|\s+$/g, "").toLowerCase();
     if (!validUsername(name)) { return; }
@@ -4464,12 +4525,21 @@ function changeXp(uid, n) {
     var v = (cur && typeof cur.xp === "number") ? cur.xp : 0;
     return { xp: Math.max(0, v + n) };
   });
+  var now2 = new Date();
   if (n > 0) {
-    var now = new Date();
-    bumpXp("xpDaily/" + xpDayKey(now) + "/" + uid, n);
-    bumpXp("xpWeekly/" + xpWeekKey(now) + "/" + uid, n);
-    bumpXp("xpMonthly/" + xpMonthKey(now) + "/" + uid, n);
+    bumpXp("xpDaily/" + xpDayKey(now2) + "/" + uid, n);
+    bumpXp("xpWeekly/" + xpWeekKey(now2) + "/" + uid, n);
+    bumpXp("xpMonthly/" + xpMonthKey(now2) + "/" + uid, n);
+  } else {
+    bumpXpDown("xpDaily/" + xpDayKey(now2) + "/" + uid, n);
+    bumpXpDown("xpWeekly/" + xpWeekKey(now2) + "/" + uid, n);
+    bumpXpDown("xpMonthly/" + xpMonthKey(now2) + "/" + uid, n);
   }
+}
+function bumpXpDown(path, n) {
+  db.ref(path).transaction(function (cur) {
+    return Math.max(0, (typeof cur === "number" ? cur : 0) + n);
+  });
 }
 function xpBoostMult() { return (myBoostUntil && Date.now() < myBoostUntil) ? 2 : 1; }
 function grantXp(n, key, cooldownMs) {
