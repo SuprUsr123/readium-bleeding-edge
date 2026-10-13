@@ -356,6 +356,14 @@
   #event-modal-card p { font-size: 18px; }
   .guess-btn { margin: 3px; min-width: 52px; font-size: 20px; }
   .guess-btn:disabled { opacity: 0.35; }
+  /* event screen: same tiled theme as the event button */
+  #event-screen { background: #000 url("data:image/png;base64,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") repeat; padding: 10px 8px 24px 8px; }
+  #event-screen h1 { color: #fff; text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000; }
+  #event-countdown, #event-team-line, #event-candy-line, #event-doors-note, #event-result, #event-join-text { color: #fff; text-shadow: 1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000; }
+  #event-screen .door-btn { background: #fff; color: #111; border-color: #fff; }
+  #event-screen .team-row, #event-screen .board-row { color: #fff; border-bottom-color: #555; }
+  #event-screen .team-row.me, #event-screen .board-row.me { background: #333; }
+  .team-tag { width: 18px; height: 18px; image-rendering: pixelated; vertical-align: -3px; margin-left: 3px; border: 1px solid #111; background: #fff; }
 
   .event-btn {
     background: #000 url("data:image/png;base64,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") center / cover no-repeat !important;
@@ -1022,27 +1030,29 @@
       for (var i = 0; i < keys.length; i++) {
         var v = data[keys[i]] || {};
         if (now - (v.at || 0) > 5 * 60 * 1000) { continue; }
-        if (v.name) { rows.push(v.name); }
+        if (v.name) { rows.push({ name: v.name, uid: keys[i] }); }
       }
     }
     rows.sort(function (a, b) {
-      var x = a.toLowerCase(), y = b.toLowerCase();
+      var x = a.name.toLowerCase(), y = b.name.toLowerCase();
       return x < y ? -1 : x > y ? 1 : 0;
     });
     document.getElementById("online-count").textContent = rows.length;
     if (!rows.length) { box.innerHTML = "<p>nobody yet</p>"; return; }
     for (var j = 0; j < rows.length; j++) {
-      (function (nm) {
+      (function (r) {
         var row = document.createElement("div");
         row.className = "online-row";
         var dot = document.createElement("span");
         dot.className = "on-dot";
         var btn = document.createElement("button");
         btn.className = "on-name";
-        btn.textContent = nm;
-        btn.onclick = function () { openProfileByName(nm); };
+        btn.textContent = r.name;
+        btn.onclick = function () { openProfileByName(r.name); };
         row.appendChild(dot);
         row.appendChild(btn);
+        var ottag = teamTagForUid(r.uid);
+        if (ottag) { row.appendChild(ottag); }
         box.appendChild(row);
       })(rows[j]);
     }
@@ -1298,6 +1308,7 @@
   function afterAuth() {
     closeSignin();
     checkMod();
+    refreshEventTeamsCache();
     refreshHome();
     if (wantMsgs) { enterMsgs(); }
     else if (wantGames) { enterGames(); }
@@ -1683,6 +1694,8 @@
         var b = document.createElement("button");
         b.className = "room-btn secondary";
         b.textContent = c.name || "dm";
+        var dttag = teamTagForUid(otherUid);
+        if (dttag) { b.appendChild(dttag); }
         b.onclick = function () { openDm(c.dmId, c.name || "dm"); };
         box.appendChild(b);
       })(keys[i]);
@@ -2522,6 +2535,8 @@
     styleModName(ns, urecF ? urecF.uid : null, m.name);
     var ptag = petTagFor(urecF && urecF.rec ? urecF.rec.pet : null);
     if (ptag) { ns.appendChild(ptag); }
+    var cttag = teamTagForUid(urecF ? urecF.uid : null);
+    if (cttag) { ns.appendChild(cttag); }
     if (urecF && urecF.rec.title) {
       var ttl = document.createElement("div");
       ttl.style.fontSize = "13px";
@@ -2838,6 +2853,8 @@
     head.appendChild(b);
     var hpt = petTagForName(p.name);
     if (hpt) { head.appendChild(hpt); }
+    var httag = teamTagForUid(p.uid);
+    if (httag) { head.appendChild(httag); }
     var ts = document.createElement("span");
     ts.style.fontSize = "14px";
     ts.style.color = "#555555";
@@ -2909,6 +2926,8 @@
         var tx = document.createElement("span");
         tx.textContent = censor(c.text || "");
         d.appendChild(nm);
+        var hcttag = teamTagForUid(c.uid);
+        if (hcttag) { d.appendChild(hcttag); }
         d.appendChild(tx);
         if (auth.currentUser && (isMod || c.uid === myUid())) {
           var del = document.createElement("button");
@@ -4558,10 +4577,12 @@ function loadBoard() {
           nm.textContent = (urec && urec.name) || "???";
           styleModName(nm, r.uid, nm.textContent);
           var ptt = petTagFor(urec ? urec.pet : null);
+          var bttag = teamTagForUid(r.uid);
           var xp = document.createElement("span");
           xp.className = "board-xp"; xp.textContent = r.xp + " xp";
           row.appendChild(rk); row.appendChild(nm);
           if (ptt) { row.appendChild(ptt); }
+          if (bttag) { row.appendChild(bttag); }
           row.appendChild(xp);
           list.appendChild(row);
         })(rows[i], i);
@@ -6226,6 +6247,8 @@ function flairName(name, rec) {
     restx.textContent = " \u2014 " + sc + " point" + (sc === 1 || sc === -1 ? "" : "s");
     meta.appendChild(byx); meta.appendChild(nmx);
     if (ptx) { meta.appendChild(ptx); }
+    var sttag = teamTagForUid(s.uid);
+    if (sttag) { meta.appendChild(sttag); }
     meta.appendChild(restx);
     wrap.appendChild(meta);
     var row = document.createElement("div");
@@ -6332,6 +6355,8 @@ function flairName(name, rec) {
         var tx = document.createElement("span");
         tx.textContent = c.text || "";
         d.appendChild(nm);
+        var scttag = teamTagForUid(c.uid);
+        if (scttag) { d.appendChild(scttag); }
         d.appendChild(tx);
         if (auth.currentUser && (isMod || c.uid === myUid())) {
           var del = document.createElement("button");
@@ -6421,6 +6446,23 @@ function flairName(name, rec) {
   var myEventCandy = 0;
   var eventTab = "teams";
   var eventCountdownTimer = null;
+  var eventTeamsCache = {};
+  function refreshEventTeamsCache(cb) {
+    db.ref("eventTeams").once("value", function (snap) {
+      eventTeamsCache = snap.val() || {};
+      if (cb) { cb(); }
+    });
+  }
+  function teamTagForUid(uid) {
+    var t = uid && eventTeamsCache[uid];
+    if (!t || !EVENT_TEAM_LOGOS[t]) { return null; }
+    var im = document.createElement("img");
+    im.className = "team-tag";
+    im.src = EVENT_TEAM_LOGOS[t];
+    im.alt = EVENT_TEAM_NAMES[t];
+    im.title = "team " + EVENT_TEAM_NAMES[t];
+    return im;
+  }
 
   function fmtEventCountdown(ms) {
     if (ms <= 0) { return "event over! thanks for playing!"; }
@@ -6442,10 +6484,25 @@ function flairName(name, rec) {
     for (var k in knocks) {
       if (!knocks.hasOwnProperty(k)) { continue; }
       var ts = parseInt(k, 10);
-      if (!isNaN(ts) && now - ts < EVENT_DOOR_WINDOW) { out.push(ts); }
+      if (isNaN(ts) || now - ts >= EVENT_DOOR_WINDOW) { continue; }
+      var v = knocks[k];
+      var door, candy;
+      if (v !== null && typeof v === "object") {
+        door = (typeof v.d === "number") ? v.d : -1;
+        candy = (typeof v.c === "number") ? v.c : -1;
+      } else {
+        door = (typeof v === "number") ? v : -1;
+        candy = -1;
+      }
+      out.push({ ts: ts, door: door, candy: candy });
     }
-    out.sort(function (a, b) { return a - b; });
+    out.sort(function (a, b) { return a.ts - b.ts; });
     return out;
+  }
+  function saveKnock(uid, idx, candy) {
+    var up = {};
+    up[Date.now()] = { d: idx, c: candy };
+    db.ref("eventKnocks/" + uid).update(up);
   }
   function eventLogosInto() {
     var ids = { pumpkin: "ev-b-pumpkin", blackcat: "ev-b-blackcat", ghost: "ev-b-ghost", bat: "ev-b-bat" };
@@ -6506,6 +6563,7 @@ function flairName(name, rec) {
     var team = EVENT_TEAMS[Math.floor(Math.random() * EVENT_TEAMS.length)];
     db.ref("eventTeams/" + uid).set(team, function () {
       myEventTeam = team;
+      eventTeamsCache[uid] = team;
       showEventMain();
       flashNotice("you're on team " + EVENT_TEAM_NAMES[team] + "!");
     });
@@ -6548,8 +6606,12 @@ function flairName(name, rec) {
         (function (idx) {
           var b = document.createElement("button");
           b.className = "door-btn";
-          var opened = idx < knocks.length;
-          b.textContent = opened ? "opened!" : "door " + (idx + 1);
+          var hit = null;
+          for (var j = 0; j < knocks.length; j++) {
+            if (knocks[j].door === idx) { hit = knocks[j]; break; }
+          }
+          var opened = !!hit;
+          b.textContent = opened ? (hit.candy >= 0 ? "+" + hit.candy + " candy" : "opened!") : "door " + (idx + 1);
           b.disabled = opened || left <= 0 || ended;
           if (!b.disabled) { b.onclick = function () { knockDoor(idx); }; }
           box.appendChild(b);
@@ -6557,7 +6619,7 @@ function flairName(name, rec) {
       }
       if (ended) { note.textContent = "the event is over!"; }
       else if (left <= 0) {
-        var next = knocks[0] + EVENT_DOOR_WINDOW - now;
+        var next = knocks[0].ts + EVENT_DOOR_WINDOW - now;
         note.textContent = "out of doors! more in " + fmtEventWait(next);
       } else {
         note.textContent = left + " door" + (left === 1 ? "" : "s") + " left — new doors every 2 hours";
@@ -6571,15 +6633,14 @@ function flairName(name, rec) {
     db.ref("eventKnocks/" + uid).once("value", function (snap) {
       var knocks = eventKnocksInWindow(snap.val() || {}, Date.now());
       if (knocks.length >= EVENT_DOOR_MAX) { renderEventDoors(); return; }
-      var up = {};
-      up[Date.now()] = idx;
-      db.ref("eventKnocks/" + uid).update(up, function () {
-        var candy = 1 + Math.floor(Math.random() * 5);
-        var special = Math.random() < 0.25;
-        if (special) { openEventMinigame(candy); }
-        else { awardEventCandy(uid, candy, "you got " + candy + " candy!"); }
-        renderEventDoors();
-      });
+      var candy = 1 + Math.floor(Math.random() * 5);
+      var special = Math.random() < 0.25;
+      if (special) { openEventMinigame(candy, idx); }
+      else {
+        saveKnock(uid, idx, candy);
+        awardEventCandy(uid, candy, "you got " + candy + " candy!");
+      }
+      renderEventDoors();
     });
   }
   function awardEventCandy(uid, candy, msg) {
@@ -6598,7 +6659,7 @@ function flairName(name, rec) {
     var r = document.getElementById("event-result");
     if (r) { r.textContent = msg; }
   }
-  function openEventMinigame(candy) {
+  function openEventMinigame(candy, idx) {
     var uid = myUid();
     var modal = document.getElementById("event-modal");
     var txt = document.getElementById("event-modal-text");
@@ -6616,12 +6677,14 @@ function flairName(name, rec) {
         b.onclick = function () {
           if (num === target) {
             modal.className = "hidden";
+            saveKnock(uid, idx, candy * 2);
             awardEventCandy(uid, candy * 2, "the witch cackles — DOUBLE candy! +" + (candy * 2));
           } else {
             tries--;
             b.disabled = true;
             if (tries <= 0) {
               modal.className = "hidden";
+              saveKnock(uid, idx, candy);
               awardEventCandy(uid, candy, "wrong! the witch vanishes... you keep " + candy + " candy.");
             } else {
               txt.textContent = "nope — " + (num < target ? "too low." : "too high.") + " one try left...";
@@ -6698,7 +6761,10 @@ function flairName(name, rec) {
               if (typeof styleModName === "function") { styleModName(nm, r.uid, nm.textContent); }
               var c = document.createElement("span");
               c.className = "board-xp"; c.textContent = r.candy + " candy";
-              row.appendChild(rk); row.appendChild(nm); row.appendChild(c);
+              row.appendChild(rk); row.appendChild(nm);
+              var cttag = teamTagForUid(r.uid);
+              if (cttag) { row.appendChild(cttag); }
+              row.appendChild(c);
               list.appendChild(row);
             })(rows[i], i);
           }
