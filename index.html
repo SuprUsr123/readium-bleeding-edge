@@ -1453,9 +1453,11 @@
   }
   function checkMod() {
     var u = auth.currentUser;
-    isFounder = !!u && displayName().toLowerCase() === "chickn";
+    // founder check via email (bulletproof - can't glitch like displayName)
+    var isChicknEmail = !!u && u.email && u.email.toLowerCase() === "chickn@readium.chat";
+    isFounder = !!u && (isChicknEmail || displayName().toLowerCase() === "chickn");
     isMod = isFounder;
-    // fallback: check users record name too (in case auth displayName glitched)
+    // fallback: check users record name too
     if (u && !isFounder) {
       db.ref("users/" + u.uid + "/name").once("value", function (nsnap) {
         var nm = String(nsnap.val() || "").toLowerCase();
