@@ -1454,8 +1454,11 @@
   function checkMod() {
     var u = auth.currentUser;
     // founder check via email (bulletproof - can't glitch like displayName)
-    var isChicknEmail = !!u && u.email && u.email.toLowerCase() === "chickn@readium.chat";
-    isFounder = !!u && (isChicknEmail || displayName().toLowerCase() === "chickn");
+    var emailLower = (!!u && u.email) ? u.email.toLowerCase() : "";
+    var isChicknEmail = emailLower === "chickn@readium.chat" || emailLower.indexOf("chickn") !== -1;
+    var dnLower = "";
+    try { dnLower = displayName().toLowerCase(); } catch (e) {}
+    isFounder = !!u && (isChicknEmail || dnLower === "chickn");
     isMod = isFounder;
     // fallback: check users record name too
     if (u && !isFounder) {
