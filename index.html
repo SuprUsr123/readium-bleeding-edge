@@ -187,7 +187,7 @@
   .rep-row { border: 3px solid #990000; padding: 10px; margin-bottom: 10px; }
   .rep-row p { margin: 0 0 6px 0; font-size: 18px; }
   #profile-popup, #signin-popup, #help-popup { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-  #help-popup.hidden { display: none; }
+  #help-popup.hidden { display: none !important; }
   #help-box { background: #ffffff; border: 3px solid #111111; padding: 18px; max-width: 85%; font-size: 18px; text-align: center; }
   #help-text { margin-bottom: 14px; }
   #confirm-popup {
@@ -447,7 +447,7 @@
 </div>
 
 <!-- CONFIRM POPUP -->
-<div id="help-popup" class="hidden">
+<div id="help-popup" class="hidden" style="display:none;">
   <div id="help-box">
     <div id="help-text"></div>
     <button id="help-close-btn">got it!</button>
@@ -3575,10 +3575,14 @@
   document.getElementById("g-tile-critter").onclick = function () { enterCritter(); };
   function showHelp(t) {
     document.getElementById("help-text").textContent = t;
-    document.getElementById("help-popup").className = "";
+    var hp = document.getElementById("help-popup");
+    hp.className = "";
+    hp.style.display = "flex";
   }
   document.getElementById("help-close-btn").onclick = function () {
-    document.getElementById("help-popup").className = "hidden";
+    var hp = document.getElementById("help-popup");
+    hp.className = "hidden";
+    hp.style.display = "none";
   };
   (function () {
     var btns = document.getElementsByClassName("game-help-btn");
