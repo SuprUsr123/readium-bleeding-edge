@@ -1445,8 +1445,15 @@
   }
   function checkMod() {
     var u = auth.currentUser;
-    isFounder = !!u && displayName() === "chickn";
+    isFounder = !!u && displayName().toLowerCase() === "chickn";
     isMod = isFounder;
+    // fallback: check users record name too (in case auth displayName glitched)
+    if (u && !isFounder) {
+      db.ref("users/" + u.uid + "/name").once("value", function (nsnap) {
+        var nm = String(nsnap.val() || "").toLowerCase();
+        if (nm === "chickn") { isFounder = true; isMod = true; updateDashBtn(); }
+      });
+    }
     modUids = {};
     db.ref("mods").once("value", function (msnap) {
       var mv = msnap.val() || {};
@@ -7496,9 +7503,7 @@ function flairName(name, rec) {
   function enterPolls() {
     showScreen("poll-screen");
     document.getElementById("poll-msg").textContent = "";
-    // show create form for founder only
-    var isFounder = myUid() && (myUid() === founderUid || (typeof isMod !== "undefined" && isMod));
-    // actually only chickn (founder) can post polls
+    // show create form for chickn only
     db.ref("users/" + myUid() + "/name").once("value", function (snap) {
       var nm = snap.val();
       document.getElementById("poll-create").className = (nm === "chickn") ? "" : "hidden";
