@@ -1417,6 +1417,12 @@
       } else {
         var v = snap.val();
         if (!v.joinedAt) { uref.update({ joinedAt: v.at || Date.now() }); }
+        // fix "Reader" glitch: sync real name from auth if stored name is bad
+        var authName = "";
+        try { authName = (auth.currentUser.displayName || "").trim(); } catch (e) {}
+        if (authName && authName !== "Reader" && (!v.name || v.name === "Reader") && v.name !== authName) {
+          uref.update({ name: authName });
+        }
         currentPfp = v.pfp || blankPfp();
         currentFlair = v.flair || null;
         currentTitle = v.title || null;
