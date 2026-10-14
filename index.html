@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Readium!</title>
 <style>
+  body.dark { background: #111111; color: #eeeeee; }
+  body.dark input, body.dark textarea, body.dark select { background: #222222; color: #eeeeee; border-color: #555555; }
+  body.dark button { background: #eeeeee; color: #111111; border-color: #eeeeee; }
+  body.dark button.secondary { background: #333333; color: #eeeeee; border-color: #777777; }
+  body.dark .tile { background: #222222; border-color: #555555; color: #eeeeee; }
+  body.dark .req-row { background: #1a1a1a; border-color: #444444; }
+  body.dark .msg { border-color: #444444; }
+  body.dark h1, body.dark h2 { color: #eeeeee; }
+  body.dark a { color: #88bbff; }
+  body.dark .sug-done-text { text-decoration: line-through; opacity: 0.6; }
   body {
+
     font-family: Georgia, "Times New Roman", serif;
     background: #ffffff;
     color: #111111;
@@ -279,6 +290,7 @@
   .c4-dot.o { border: 4px solid #111111; }
   .ban-dur.sel { background: #111111; color: #ffffff; }
   .sug-type.sel, .sug-tab.sel { background: #111111; color: #ffffff; }
+  .sug-done-text { text-decoration: line-through; opacity: 0.6; }
   .g-logo { display: block; height: 72px; }
   .g-label { display: block; font-size: 20px; margin-top: 4px; }
   .g-logo-img { width: 64px; height: 64px; }
@@ -397,13 +409,21 @@
   <button id="event-btn" class="event-btn">october event</button>
   <button id="games-btn" class="secondary">games</button>
   <button id="hood-btn" class="secondary">neighborhood</button>
-  <button id="suggest-btn" class="secondary">suggestions</button>
-  <button id="home-store-btn" class="secondary">store</button>
-  <button id="home-board-btn" class="secondary">leaderboard</button>
-  <button id="home-settings-btn" class="secondary">settings</button>
-  <button id="home-log-btn" class="secondary">changelog</button>
-  <button id="fullscreen-btn" class="secondary">full screen</button>
+  <button id="home-apps-btn" class="secondary">see all apps</button>
   <button id="dash-btn" class="secondary hidden">mod dashboard</button>
+</div>
+
+<!-- ALL APPS -->
+<div id="apps-screen" class="hidden">
+  <h1>all apps</h1>
+  <button id="apps-suggest-btn" class="secondary">suggestions</button>
+  <button id="apps-store-btn" class="secondary">store</button>
+  <button id="apps-board-btn" class="secondary">leaderboard</button>
+  <button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button>
+  <button id="apps-log-btn" class="secondary">changelog</button>
+  <button id="apps-settings-btn" class="secondary">settings</button>
+  <button id="apps-fullscreen-btn" class="secondary">full screen</button>
+  <button id="apps-back-btn" class="secondary">back</button>
 </div>
 
 <!-- SIGN IN POPUP -->
@@ -445,6 +465,19 @@
   <div id="mentions-list"><p>none</p></div>
   <button id="mentions-clear-btn" class="secondary">clear all</button>
   <button id="mentions-back-btn" class="secondary">back</button>
+</div>
+
+<!-- STORE DETAILS MODAL -->
+<div id="store-modal" class="hidden">
+  <div id="store-modal-card">
+    <h2 id="store-d-name"></h2>
+    <div id="store-d-preview" style="margin:12px 0;text-align:center;"></div>
+    <p id="store-d-desc" style="font-size:16px"></p>
+    <p id="store-d-cost" style="font-size:18px"></p>
+    <div id="store-d-options" style="margin:10px 0;"></div>
+    <button id="store-d-buy">buy</button>
+    <button id="store-d-close" class="secondary">close</button>
+  </div>
 </div>
 
 <!-- STORE -->
@@ -494,6 +527,8 @@
       <button class="mini secondary eb-tab" data-eb="candy">candy</button>
     </div>
     <div id="event-board-list"></div>
+    <button id="event-teams-toggle" class="secondary section-head">team members +</button>
+    <div id="event-teams-wrap" class="hidden section-body"><div id="event-teams-list"><p>loading...</p></div></div>
   </div>
   <div id="event-modal" class="hidden">
     <div id="event-modal-card">
@@ -531,6 +566,7 @@
   <div>
     <button class="mini sug-tab sel" data-tab="open">open</button>
     <button class="mini secondary sug-tab" data-tab="done">completed</button>
+    <button class="mini secondary sug-tab" data-tab="rejected">rejected</button>
   </div>
   <div id="suggest-list"><p>loading...</p></div>
   <button id="suggest-home-btn" class="secondary">home</button>
@@ -564,7 +600,10 @@
 <div id="dm-screen" class="hidden">
   <h1>dms <span class="dm-dot dot hidden"></span></h1>
   <h2>requests</h2>
+  <h2>incoming requests</h2>
   <div id="dm-requests"><p>none</p></div>
+  <h2>requests you sent</h2>
+  <div id="dm-requests-out"><p>none</p></div>
   <h2>conversations</h2>
   <div id="dm-convos"><p>none yet</p></div>
   <h2>find someone</h2>
@@ -593,17 +632,20 @@
   <div id="dash-reports"><p>loading...</p></div>
   <h2>banned users</h2>
   <input id="ban-input" type="text" maxlength="20" placeholder="username to ban...">
+  <input id="ban-reason" type="text" maxlength="120" placeholder="reason for ban...">
   <div id="ban-dur-row">
     <button class="mini secondary ban-dur sel" data-min="10">10 min</button><button class="mini secondary ban-dur" data-min="60">1 hour</button><button class="mini secondary ban-dur" data-min="1440">1 day</button><button class="mini secondary ban-dur" data-min="10080">1 week</button><button class="mini secondary ban-dur" data-min="0">forever</button>
   </div>
   <button id="ban-add-btn" class="secondary">ban user</button>
-  <div id="dash-bans"><p>loading...</p></div>
+  <button id="dash-bans-toggle" class="secondary section-head">banned list +</button>
+  <div id="dash-bans-wrap" class="hidden section-body"><div id="dash-bans"><p>loading...</p></div></div>
   <div id="dash-mods-wrap" class="hidden">
     <h2>moderators</h2>
     <p style="font-size:16px">Only you see this. People you add can delete messages, pin, and ban.</p>
     <input id="dash-mod-input" type="text" maxlength="20" placeholder="username...">
     <button id="dash-mod-add-btn" class="secondary">make moderator</button>
-    <div id="dash-mod-list"></div>
+    <button id="dash-mods-toggle" class="secondary section-head">moderator list +</button>
+    <div id="dash-mods-list-wrap" class="hidden section-body"><div id="dash-mod-list"></div></div>
   </div>
   <button id="dash-home-btn" class="secondary">home</button>
 </div>
@@ -615,6 +657,9 @@
   <button id="edit-pfp-btn" class="secondary">edit picture</button>
   <h2 id="my-name"></h2>
   <p>joined: <span id="my-joined"></span></p>
+  <h2>badges</h2>
+  <div id="my-badges"><p>no badges yet — win events to earn them!</p></div>
+  <p>helpful reports: <b id="my-helpful">0</b></p>
   <label for="bio-input">Bio</label>
   <textarea id="bio-input" maxlength="150" placeholder="tell people about you..."></textarea>
   <label for="birthday-input">Birthday</label>
@@ -651,6 +696,11 @@
     <p style="font-size:16px">Make everything bigger — easier on Kindle.</p>
     <button id="font-normal-btn" class="secondary">normal text</button>
     <button id="font-large-btn" class="secondary">large text</button>
+  </div>
+  <button id="set-sec-appear" class="secondary section-head">appearance +</button>
+  <div id="set-body-appear" class="hidden section-body">
+    <button id="theme-light-btn" class="secondary">light mode</button>
+    <button id="theme-dark-btn" class="secondary">dark mode</button>
   </div>
   <button id="set-sec-online" class="secondary section-head">online list +</button>
   <div id="set-body-online" class="hidden section-body">
@@ -691,10 +741,27 @@
 <!-- GAMES -->
 <div id="games-screen" class="hidden">
   <h1>games</h1>
-  <button id="g-tile-ttt" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,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" alt="tic tac toe">tic tac toe</span></button><button id="g-tile-c4" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,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" alt="connect four">connect four</span></button><button id="g-tile-chess" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAlUlEQVR4nO1VSQ6AMAikxhf0/2/sF/BA4qFaOmCQmjjHBpilW2FmisQWOp2IdrCu1tqttNaQRsjBdfpo0UnwBBDBbRpgRMV0iiQWcLRgjYgE566C22sj6IbiHGtE9PF7oChFTGQ7mGqcFqQ6AM+JXpbnwPQeKMVJDkzy9ZYMBw75SuPrDtzyR+3hDmyfvgPZr+lPQHQAd1YZb5CW8vkAAAAASUVORK5CYII=" alt="chess">chess</span></button><button id="g-tile-pic" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAApklEQVR4nO2Wyw3AIAhAsSOw/4yuYA9NTEsB+XloUo8I78WA0TbGgJ3r2Er/BSkBIiKiJajvHvftdx4blOgA0Hsn8TbHlNRfqWzQTn8IpDyl2JLQkhdtHlESpKZI70pWYKHHBcbmBwV2ekTgorsFXrpPEKA7BDG6VRCmmwQZ+lqQpC8EebomKKGLgio6LyikM4JaOhWU06mgnC4KquiQf5OX6/tfxxO5mFy17b4mSgAAAABJRU5ErkJggg==" alt="pictionary">pictionary</span></button><button id="g-tile-life" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,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" alt="life sim">life sim</span></button><button id="g-tile-gol" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAABgUlEQVR4nO3bQQrDMAwAwar0/192fmAwpCQLM2eDDYtOwrPW+tDxffoBnBEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrCY378vmJmj8/ZzeyYsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWLmbfsn+7M9ExYjWIxgMYLFCBYjWIxgMYLFCBYjWIxgMYLFCBYjWIxgMcf/w073VdzLhMUIFiNYjGAxgsUIFiNYjGAxgsUIFiNYjGAxgsUIFiNYzOv+h7FnwmIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEs5gJJThAc7zDKfgAAAABJRU5ErkJggg==" alt="Zaya's game of life">Zaya's game of life</span></button><button id="g-tile-sol" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAADb0lEQVR4nO3cP0tbURzG8V9KwBL6ZymZugtdHLq4uAiCbyDvwNk1r8J34OiULRiEuDk4trhZnJwEoYWYEpFIejvESiA1Jrn3d3O+5zzfqV1y5HzyeEXFSpZlpji9WfUHoBZLYLAEBktgsAQGS2CwBAZLYLAEBktgsAQGq5r/JSqVSv4XiaMSvjGrhcESGCyBwSrgGTZZgj9dK/kRroXBKnhhiTe9tsI/5WhhsNzBfh4efl9be7y99T4okdzB7o6P6/v7/ZMT74MSyRfsz/39aDD4tLfX63RcDwqkRrPVaLZcj/AF63e7H3d3366vD6+vs+HQ9axE8gXrtdu/jo5+bG4+3tz8PjtzPSuRHL+sz0ajh6urLxcXZtbvdu86nQ87O37HJZLjwgbn57WNjfG/321t9U9P/c5KJ0ewXrv9fnv76ZharVqvP1xe+h2XSI6fEj8fHEz+d13PsCLSdzpgCQyWwGAJDJbAYEUC9i2Z39yKAWyslYhZDGBJhQebHFYKI2ODTQtFbwYGe8kmbjMwWJpRwWbPKOKRIcHm8YjVDAmWcjyw+acT5chgYIsaxGdGAlvu9iMzI4EpA4HlGUpMI2OA5b/xaMwYYOo5AFhR44hjZKGDFXvLEZgFDeZxv3SzoMHUdOGC+U0BPbJAwbzvlGsWKJh6qRDBynn7Q0cWHFiZ90g0Cwus/BvEmYUFpl4tILBVvdlZIwsI7OuK/nTfqs5droDA1DyFBVb+m501LwsNzMq9QZyWBQhmZd0jUcvCBFMzChTM++0PnZcFC2aed8rVspDB1H8LGsxjCuh5WeBgVvT90rUsfDAr7pYj0DIEmJqMAZZ/HHHMyyhglu/Go9EyEJgaRwJbbigxzctYYLb47UemZTgwW8QgPi0jgiUeEmye6UQ5L4OC2WsesWoZFyzZBAZLYLAEBktgsAQGS2CwBAZLYLAEBktgsAQGS2CwBAZLYLAEBktgsAQGS2CwBAaruuoPYPki/k2bGWlhsAQGS2CwBAZLYLAEBktgsAQGS2CwBAZLYLAK/l5iBfUnxYlpYbAEBktgsAp4hmVTP5eafJI1mq38R6jntDBYlel9FPCi+lrxX4VfrxYGS2CwBAbL5Rmm/NLCYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQzWX994ytFPyb6NAAAAAElFTkSuQmCC" alt="solitaire">solitaire</span></button>
+  <button id="g-tile-ttt" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,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" alt="tic tac toe">tic tac toe</span></button><button id="g-tile-c4" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAAAAADCLb1kAAALhklEQVR42tVcW6wdVRn+/pm9Z/bMKfTQ1gKtpco1oAQKCtUEvHILiiFqUDTyoCZqAvhm1ETjg4oxMZqY8GBMkARv8YJIKSiJEFGDimIClGJCiNhyuBQoIJyePWt9Puw9l3WbPbvnnHZ3ck4ye9b8a/5Z//2yRrQAIEVgHBQAICEAxmO0Tkb3gOUN1Ql8P8eXKM7V0dAYBdHe4cN3RIfx2fRdO5wI+Wgjkaz0O45ZxbqHAOmCkeVlGiRj9dc4YwkxvswSnNZE9mX6HmbgVQHYSIM1U1MqsSnP6t+hFZLQ5XqkmqoS0uZzIJbIzp6USWPdnTMPOZzLFsUbdKfBAZPnYcVDBG1ms1ShT0KaRCG6g7aLiRAzqBhZSQcdksG/1FhVkklljMQhCidrIEOCscwln4JkTWE25Z2ywiQL6VoG+Vgm2oDlIeQQ2dbtNufAf7mFP7rykE8x2pq6MyFXxOLOtKY2Fq82ri1LXSrUlSNZ5OFNdpddcW4WQOTQiP2hdGE9a2p5R/VS0xW+7iSrrcI0JKuoITKOExwqBRXUBJJNNrkzSrJ2azUJZ9sb5YrwEGj+ef22Dg4afKzVXewn+0OUkodWWid356FD8+SpSeajyDKcr87Gdcak7LCG0l4WatHU0xhOrIpx9RrObtzNVZWyWTeu05DMpbERIC2PZLYhlRbDWAavbCNeJ2LMqAvbkXF5CLjaSFi1i+vy+COoGlB6fB2Ma6vMH5S5CwJVAxFbFl2mTVlO1FUSIrZ0INmEMAjTGlf4fWrLpPdaRV5a1mIlNWpDvcya2LNdU3tyu2x6zmGSNZPBXBnjakQ2LPUQbdRaOJhjUPFMGsznzB7J3GQDbF0If44RXrI2oltMmV6mqYeaOkrspR8vp3gTEnU2cqRm65TlQYjiiGRG4t/UqKMwaJUDkcbc0/FQHaStVthkOPmkW1pwNGE4coWdeuzuUzc0ec+SSXFlc0yyEas07pEGA0nYxIl7Tz1Pc5rR/wz71JVGdYjFJk0DGW2Dfv4b2EyRBJMNkcfOibXw0uZxiB25iNdwmnksKX+IOEp75kjGloICGUbXGrMKMGTQVTHHmtVXS8ooBOslpEYkgNa+wrViFAHUjMXJM1LJGDB2E856BKjcSauaq38NqGMAQ5VEAFRsoRMJoA9EaXnuAC6pgZTnTcAYgBrGfQ+gyUO2rlUxnv/93bueVdnx2y55Z6SbeVUywp/v+NueV+MNZ1x48fEmuirGnp33/nufOmrLeRdvhwGoRYb33PngwmJ/45vfddE8dBTiBZKkJrXWo/OCL3x1c3XHubeQqryNirz9guoxG65/ikU1xoJPfG599a4X7mwCFuSPzqomPeFrL5WAuvFHDV1Pxwqf352EKMsHg8EgywfA+/dWT1Xcfw0wyLPRYIxNv6gxKnjzBsTlWAp86pUKo4L/ubQEzPJMcPq9HNI9RgjpGhuy4E0R5tKkPAY5Tnp4PLHinnORZdVYmkf4ZolRwS8jzmvALMP2hTFgwX9tRT6oAefQu7m5uA5CWo9RKvgTpPUjkyRJ5vD6x6lIKrXvTMwZY4MBvjOauOA3kA0swLc+rzRJxceOswCzBL8eY6SbJLMppvjomr45bZLkOP9AocmCV1rTJkma4U4WZMHbkKXW4Bp8iAWp1YG3ILfGBv2jHxmvn64JZPAQSSp9kQOaJHO4gQUL/swzlkUnv6K11i+9IcqcwRw/ZsGCX3deJElyvFsr6/Ha5qGCt8OdNkn765+i0ounR4PEM/H3OBzy2x5kk0F0+qJW3DPfT93BDDubbKRJjnWBsNRDghu9yqG/7xYsyY5dqXYHtfxgGMdLP4x8Y+muO2QJt7zY92rgG5tOuqBuaCr9ch3tvS/WXuf1NvRwq7fypJNHHhD5++6+D1DkNvR4q9ci6PjevaUxFY8/BIB4YH/ihY0eWugNH6DvmYj1fcCfGPvGNP+61Ft4OPK+ZbL/H9Aw8kORaRqJ3YGuvt4Lj+PpvXHA/D8G7A54BfHeZ/DkSz36o+NHnXSMfeNC0E95Ds//z48Q8QywLxCExa++iOeCFYMFK7gT50Yd9IA0FMNjGAYzk0WLPzYMJD3rZrYNwezBPNZm/ihOsBZY66e16Hwe8xJ6z3WWh1cupVRsdGIgwi3mtuK49aGXPRk4JTBUrNuITXMqEEmeGiaZjIRuWzr0I3TiCSrfJpGfYNuBt/mpHcnZudryxsKL0DA9x04IVUw9WrKIp24rYm+4dFk8xOXekFmGm7cDb9+85B3k+zCML/MmouLirFPKlFlFsqq3apRtUPJJ70NV7+Po48pjfQ+N1cfWFuqoq7TnTWTp2A+gj2tS5UX2mkiZelEiy0ePefVpi+7EvQNXn6lite46z/LJ8OhrGQmvP2boYtsrrl+vYnXGRw646dXowEmfqLRphYEmDQ+g4E7Xi8ji1+3Rilq9do5rQefw3ZH78X3Xouc4+zWlqfSTx/Zss5zm+E1lW3X5fNeFLfgV5KnlS8kOFiQVHz5Gchufq0sH7aM2Rnk0/xDV6DUlMb2IdA5fcNxqy6ceDRa8znAZ01yi0tss+Md1Tfc2yTJcsahGPoxavKLp3ibpHI7+QwV4k0TNV8lSfIaFdl3YJip6PDFvSDDIB2mSJOkg72PLXZU/XvDBN6GXZ2maJOkgz4DPF2Wwojm8FsiyQZokaZrlPZz1z4omQ/72OCTVpAP0v0WlabuwNMOgimr3vxdAL0mTCJj77ELDjSq4/0vrAemnSQ/AeTuodf1GvPWcEWBfgHVffNkAfPLTGRAlI8D3/KXExwyD/JGrinHPL+974mXGa0+95KrTjGBQR/jvT+/atW9J8s3nf/DyqBmCUsfq9l/dv/dVJseccelVW4xgUMV45Od3P/aikjVb3/HhC5yA2M5+GOpHiwB7nhsONm50ol7qGNj/9Cvx/KZ+FWeX0CoGlp56Qa/ZOO8HfPbpxf76TRFYWi1KIJQeqcYqqFbjugxVFNm5zeqaqiqSdauhxghFrUvAelDrcXaiKDMRbDyVEl6hKl8W6pZqG5wMGB1xdXuzEOBm4K1NAnSziPSDetLCZpI5UA1inStkXfyp5xJppgNFzEyzNLPKhLentjZX4xeTQM1ztlstrNZ867fd14TGmZk3pDXiaUaeXMATgdRbMJrNThRvYp5VhEc28LBRk0mSJEeWlJEIpe09tRY6Kd+Dqf8EeEga29msKkBzOaVZ9hGWBGYT14kdVr6SBJ29QdN1SVCm773o0rnhDXF926467AuY+GbS4AYGBs2mOIuVaCtW+pSzRQegpYOGHpI12jpqkpU1urbF7VLIpLdgMHFXGJobRmaz1QL+Kpy5pvR3TrjrHlDJ6FK3r3nIzKCIu+2lNoUCb4fcyOba1r72i2hpey9Tc6aNa0MF+5QXO+zSw7KanmA5k6ydoconEntDXXtnPFt/dlK/R+7W5EPEbL69QX6WAN0tXyvRcY4pNwkEVXW72rZ1f+djGWK/Qh0x1jQdm+I8mwQQJpnPAHckWYCpxVG0dHoq2jt1ebBiMOt7pWmGn7RML1qNa5ftXHSltaU7xlDHrPrIaXp6sjwObiekHEGbBOykAKy+J6OrZcV24NUkG6UTCH9cJlJDieEiTSdODLYey8xGroQvPIQ3mFtNa+t81QKej1TY/s+qGFezw6rdH/JENY2e1Onkv6vlm1EHLSz2YSqFklFBke62aTKaZCGDvsp0PC1dKTyjYh/2h+wVX+1NkwGSNdoZ6+ytWF9XWh1pOFL2SjtasdxEwcMk9rU/RNN/xmrzUFWeslJ9smKqd8r4pCMPHbq901HDcAZSH2wWbg4is9Hl6xi+yLX7t0dW9Zjx0gJ9NQVTGXT4XkKb9uiY9ByXFkZiXucKfduCZUJcJtYPt3TYnvSc7U0Cs3D0Ah9dcmocNLd4Sei+6kYzxvVf9YRB/wfTd8M0sPs7FQAAAABJRU5ErkJggg==" alt="connect four">connect four</span></button><button id="g-tile-chess" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAlUlEQVR4nO1VSQ6AMAikxhf0/2/sF/BA4qFaOmCQmjjHBpilW2FmisQWOp2IdrCu1tqttNaQRsjBdfpo0UnwBBDBbRpgRMV0iiQWcLRgjYgE566C22sj6IbiHGtE9PF7oChFTGQ7mGqcFqQ6AM+JXpbnwPQeKMVJDkzy9ZYMBw75SuPrDtzyR+3hDmyfvgPZr+lPQHQAd1YZb5CW8vkAAAAASUVORK5CYII=" alt="chess">chess</span></button><button id="g-tile-pic" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAApklEQVR4nO2Wyw3AIAhAsSOw/4yuYA9NTEsB+XloUo8I78WA0TbGgJ3r2Er/BSkBIiKiJajvHvftdx4blOgA0Hsn8TbHlNRfqWzQTn8IpDyl2JLQkhdtHlESpKZI70pWYKHHBcbmBwV2ekTgorsFXrpPEKA7BDG6VRCmmwQZ+lqQpC8EebomKKGLgio6LyikM4JaOhWU06mgnC4KquiQf5OX6/tfxxO5mFy17b4mSgAAAABJRU5ErkJggg==" alt="pictionary">pictionary</span></button><button id="g-tile-life" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,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" alt="life sim">life sim</span></button><button id="g-tile-gol" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAABgUlEQVR4nO3bQQrDMAwAwar0/192fmAwpCQLM2eDDYtOwrPW+tDxffoBnBEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrCY378vmJmj8/ZzeyYsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWLmbfsn+7M9ExYjWIxgMYLFCBYjWIxgMYLFCBYjWIxgMYLFCBYjWIxgMcf/w073VdzLhMUIFiNYjGAxgsUIFiNYjGAxgsUIFiNYjGAxgsUIFiNYzOv+h7FnwmIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEsRrAYwWIEixEs5gJJThAc7zDKfgAAAABJRU5ErkJggg==" alt="Zaya's game of life">Zaya's game of life</span></button><button id="g-tile-sol" class="tile"><span class="g-logo"><img class="g-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJAAAACQCAIAAABoJHXvAAADb0lEQVR4nO3cP0tbURzG8V9KwBL6ZymZugtdHLq4uAiCbyDvwNk1r8J34OiULRiEuDk4trhZnJwEoYWYEpFIejvESiA1Jrn3d3O+5zzfqV1y5HzyeEXFSpZlpji9WfUHoBZLYLAEBktgsAQGS2CwBAZLYLAEBktgsAQGq5r/JSqVSv4XiaMSvjGrhcESGCyBwSrgGTZZgj9dK/kRroXBKnhhiTe9tsI/5WhhsNzBfh4efl9be7y99T4okdzB7o6P6/v7/ZMT74MSyRfsz/39aDD4tLfX63RcDwqkRrPVaLZcj/AF63e7H3d3366vD6+vs+HQ9axE8gXrtdu/jo5+bG4+3tz8PjtzPSuRHL+sz0ajh6urLxcXZtbvdu86nQ87O37HJZLjwgbn57WNjfG/321t9U9P/c5KJ0ewXrv9fnv76ZharVqvP1xe+h2XSI6fEj8fHEz+d13PsCLSdzpgCQyWwGAJDJbAYEUC9i2Z39yKAWyslYhZDGBJhQebHFYKI2ODTQtFbwYGe8kmbjMwWJpRwWbPKOKRIcHm8YjVDAmWcjyw+acT5chgYIsaxGdGAlvu9iMzI4EpA4HlGUpMI2OA5b/xaMwYYOo5AFhR44hjZKGDFXvLEZgFDeZxv3SzoMHUdOGC+U0BPbJAwbzvlGsWKJh6qRDBynn7Q0cWHFiZ90g0Cwus/BvEmYUFpl4tILBVvdlZIwsI7OuK/nTfqs5droDA1DyFBVb+m501LwsNzMq9QZyWBQhmZd0jUcvCBFMzChTM++0PnZcFC2aed8rVspDB1H8LGsxjCuh5WeBgVvT90rUsfDAr7pYj0DIEmJqMAZZ/HHHMyyhglu/Go9EyEJgaRwJbbigxzctYYLb47UemZTgwW8QgPi0jgiUeEmye6UQ5L4OC2WsesWoZFyzZBAZLYLAEBktgsAQGS2CwBAZLYLAEBktgsAQGS2CwBAZLYLAEBktgsAQGS2CwBAaruuoPYPki/k2bGWlhsAQGS2CwBAZLYLAEBktgsAQGS2CwBAZLYLAK/l5iBfUnxYlpYbAEBktgsAp4hmVTP5eafJI1mq38R6jntDBYlel9FPCi+lrxX4VfrxYGS2CwBAbL5Rmm/NLCYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQyWwGAJDJbAYAkMlsBgCQzWX994ytFPyb6NAAAAAElFTkSuQmCC" alt="solitaire">solitaire</span></button><button id="g-tile-critter" class="tile"><span class="g-logo">critter catch</span></button>
   <h2>open games</h2>
   <div id="open-games"><p>loading...</p></div>
   <button id="games-home-btn" class="secondary">home</button>
+</div>
+
+<!-- POLLS -->
+<div id="poll-screen" class="hidden">
+  <h1>polls</h1>
+  <div id="poll-create" class="hidden">
+    <h2>new poll</h2>
+    <input id="poll-q" type="text" maxlength="120" placeholder="question...">
+    <input id="poll-opt1" type="text" maxlength="60" placeholder="option 1...">
+    <input id="poll-opt2" type="text" maxlength="60" placeholder="option 2...">
+    <input id="poll-opt3" type="text" maxlength="60" placeholder="option 3 (optional)...">
+    <input id="poll-opt4" type="text" maxlength="60" placeholder="option 4 (optional)...">
+    <button id="poll-post-btn">post poll</button>
+    <p id="poll-msg" style="font-size:16px"></p>
+  </div>
+  <div id="poll-list"><p>loading...</p></div>
+  <button id="poll-back-btn" class="secondary">back</button>
 </div>
 
 <!-- CHANGELOG -->
@@ -726,9 +793,16 @@
   <button id="gm-back-btn" class="secondary">back</button>
 </div>
 
+<!-- CRITTER CATCH -->
+<div id="critter-screen" class="hidden">
+  <h1>critter catch <button class="mini secondary game-help-btn" data-help="catch wild critters! explore to find them, weaken them in battle, then throw a trap. fire beats leaf, water beats fire, leaf beats water, spark beats water, shadow beats spark!">?</button></h1>
+  <div id="critter-main"></div>
+  <button id="critter-back-btn" class="secondary">back</button>
+</div>
+
 <!-- SOLITAIRE -->
 <div id="sol-screen" class="hidden">
-  <h1>solitaire</h1>
+  <h1>solitaire</h1> <button class="mini secondary game-help-btn" data-help="solitaire: stack down in alternating colors. build each suit ace to king up top!">?</button>
   <p id="sol-msg" style="font-size:16px"></p>
   <div id="sol-top" style="display:flex;gap:8px;margin-bottom:10px;"></div>
   <div id="sol-tab" style="display:flex;gap:6px;"></div>
@@ -740,7 +814,7 @@
 
 <!-- GAME OF LIFE -->
 <div id="gol-screen" class="hidden">
-  <h1>zaya's game of life</h1>
+  <h1>zaya's game of life</h1> <button class="mini secondary game-help-btn" data-help="zaya's game of life: tap cells alive, press play. live cells with 2-3 neighbors survive!">?</button>
   <p id="gol-stats">gen 0 &middot; 0 alive</p>
   <canvas id="gol-canvas" width="448" height="288" style="border:2px solid #000; max-width:100%;"></canvas>
   <p style="font-size:16px">tap cells to toggle them, then press play. stamps: pick one, then tap the grid to place it.</p>
@@ -762,7 +836,7 @@
 
 <!-- LIFE SIM -->
 <div id="life-screen" class="hidden">
-  <h1>life sim</h1>
+  <h1>life sim</h1> <button class="mini secondary game-help-btn" data-help="life sim: live a whole life! school, job, love, kids, try not to die.">?</button>
   <div id="life-start">
     <label for="life-name-input">your name</label>
     <input id="life-name-input" type="text" maxlength="16" placeholder="leave blank for random" autocomplete="off">
@@ -797,7 +871,7 @@
 
 <!-- TIC TAC TOE -->
 <div id="ttt-screen" class="hidden">
-  <h1 id="ttt-title">tic tac toe</h1>
+  <h1 id="ttt-title">tic tac toe</h1> <button class="mini secondary game-help-btn" data-help="tic tac toe: get 3 in a row to win! you are X.">?</button>
   <p id="ttt-status"></p>
   <div id="ttt-board"></div>
   <button id="ttt-rematch-btn" class="hidden">rematch</button>
@@ -807,7 +881,7 @@
 
 <!-- CONNECT FOUR -->
 <div id="c4-screen" class="hidden">
-  <h1 id="c4-title">connect four</h1>
+  <h1 id="c4-title">connect four</h1> <button class="mini secondary game-help-btn" data-help="connect four: drop checkers, connect 4 in a row to win!">?</button>
   <p id="c4-status"></p>
   <div id="c4-board"></div>
   <button id="c4-rematch-btn" class="hidden">rematch</button>
@@ -817,7 +891,7 @@
 
 <!-- CHESS -->
 <div id="chess-screen" class="hidden">
-  <h1 id="chess-title">chess</h1>
+  <h1 id="chess-title">chess</h1> <button class="mini secondary game-help-btn" data-help="chess: tap a piece, then tap where to move it. checkmate wins!">?</button>
   <p id="chess-status"></p>
   <div id="chess-board"></div>
   <div id="chess-captured"></div>
@@ -828,7 +902,7 @@
 
 <!-- PICTIONARY -->
 <div id="pic-screen" class="hidden">
-  <h1 id="pic-title">pictionary</h1>
+  <h1 id="pic-title">pictionary</h1> <button class="mini secondary game-help-btn" data-help="pictionary: one player draws, the other guesses the word!">?</button>
   <p id="pic-status"></p>
   <div id="pic-word-row" class="hidden">
     <p>pick a word to draw:</p>
@@ -857,8 +931,9 @@
     <p>birthday: <span id="pp-birthday"></span></p>
     <p>joined: <span id="pp-joined"></span></p>
     <button id="pp-follow-btn" class="secondary">follow</button>
+    <div id="pp-badges" style="margin:8px 0;"></div>
     <button id="pp-dm-btn" class="secondary">dm</button>
-    <button id="pp-tip-btn" class="secondary">tip 10 xp</button>
+    <button id="pp-tip-btn" class="secondary">tip xp</button>
     <button id="pp-close-btn" class="secondary">close</button>
   </div>
 </div>
@@ -905,6 +980,7 @@
   var suggestCommentsRefs = {};
   var suggestType = "idea";
   var suggestTab = "open";
+  function sugIsRejected(s) { return !!(s && s.rejected); }
   var suggestData = null;
   var wantMsgs = false;
   var wantGames = false;
@@ -1041,6 +1117,16 @@
     pfpCache[pfpStr] = url;
     return url;
   }
+  var pfpUserCache = {};
+  function fillPfpImg(img, uid) {
+    if (!uid) { return; }
+    if (pfpUserCache[uid]) { img.src = pfpURL(pfpUserCache[uid]); return; }
+    db.ref("users/" + uid + "/pfp").once("value", function (snap) {
+      var s = snap.val() || blankPfp();
+      pfpUserCache[uid] = s;
+      try { img.src = pfpURL(s); } catch (e) {}
+    });
+  }
   function pfpImg(pfpStr, px) {
     var img = document.createElement("img");
     img.className = "pfp";
@@ -1117,8 +1203,7 @@
         btn.onclick = function () { openProfileByName(r.name); };
         row.appendChild(dot);
         row.appendChild(btn);
-        var ottag = teamTagForUid(r.uid);
-        if (ottag) { row.appendChild(ottag); }
+
         box.appendChild(row);
       })(rows[j]);
     }
@@ -1158,7 +1243,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "event-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "critter-screen", "event-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -1266,6 +1351,17 @@
   };
 
   /* ---------- clock ---------- */
+  function syncTimezoneFromCloud() {
+    var u = auth.currentUser;
+    if (!u) { return; }
+    db.ref("users/" + u.uid + "/timezone").once("value", function (snap) {
+      var cloudTz = snap.val();
+      if (cloudTz && typeof cloudTz === "string") {
+        try { localStorage.setItem("readium_tz", cloudTz); } catch (e) {}
+        updateClock();
+      }
+    });
+  }
   function updateClock() {
     var el = document.getElementById("clock");
     var mode24 = false;
@@ -1494,7 +1590,6 @@
   document.getElementById("set-sec-clock").onclick = function () { setSectionToggle("clock", "clock"); };
   document.getElementById("set-sec-pw").onclick = function () { setSectionToggle("pw", "password"); };
   document.getElementById("set-sec-online").onclick = function () { setSectionToggle("online", "online list"); };
-  document.getElementById("home-settings-btn").onclick = function () { settingsReturn = "home"; enterSettings(); };
   document.getElementById("settings-back-btn").onclick = function () {
     if (settingsReturn === "home") { goHome(); }
     else { enterProfile(); }
@@ -1516,10 +1611,7 @@
     wantHood = true; wantMsgs = false; wantGames = false; wantSuggest = false;
     requireAuth(enterHood);
   };
-  document.getElementById("suggest-btn").onclick = function () {
-    wantSuggest = true; wantMsgs = false; wantGames = false; wantHood = false;
-    requireAuth(enterSuggest);
-  };
+
 
   /* ---------- message tiles ---------- */
   function enterMsgs() {
@@ -1717,6 +1809,31 @@
     if (dmConvoRef) { dmConvoRef.off(); }
     dmReqListRef = db.ref("dmRequests/" + uid);
     dmReqListRef.on("value", function (snap) { renderDmRequests(snap.val()); });
+    db.ref("dmRequestsOut/" + uid).on("value", function (snap) {
+      var box = document.getElementById("dm-requests-out");
+      var v = snap.val() || {};
+      var keys = Object.keys(v);
+      box.innerHTML = keys.length ? "" : "<p>none</p>";
+      keys.forEach(function (toUid) {
+        var r = v[toUid] || {};
+        var row = document.createElement("div");
+        row.className = "req-row";
+        var p = document.createElement("p");
+        p.textContent = "waiting on " + (r.toName || "someone") + "...";
+        row.appendChild(p);
+        var cancel = document.createElement("button");
+        cancel.className = "mini secondary";
+        cancel.textContent = "cancel";
+        cancel.onclick = function () {
+          var up = {};
+          up["dmRequestsOut/" + uid + "/" + toUid] = null;
+          up["dmRequests/" + toUid + "/" + uid] = null;
+          db.ref().update(up);
+        };
+        row.appendChild(cancel);
+        box.appendChild(row);
+      });
+    });
     dmConvoRef = db.ref("userDms/" + uid);
     dmConvoRef.on("value", function (snap) { renderDmConvos(snap.val()); });
   }
@@ -1741,7 +1858,12 @@
         var dec = document.createElement("button");
         dec.className = "mini secondary";
         dec.textContent = "decline";
-        dec.onclick = function () { db.ref("dmRequests/" + myUid() + "/" + fromUid).remove(); };
+        dec.onclick = function () {
+          var up = {};
+          up["dmRequests/" + myUid() + "/" + fromUid] = null;
+          up["dmRequestsOut/" + fromUid + "/" + myUid()] = null;
+          db.ref().update(up);
+        };
         row.appendChild(acc);
         row.appendChild(dec);
         box.appendChild(row);
@@ -1760,8 +1882,7 @@
         var b = document.createElement("button");
         b.className = "room-btn secondary";
         b.textContent = c.name || "dm";
-        var dttag = teamTagForUid(otherUid);
-        if (dttag) { b.appendChild(dttag); }
+
         b.onclick = function () { openDm(c.dmId, c.name || "dm"); };
         box.appendChild(b);
       })(keys[i]);
@@ -1784,7 +1905,7 @@
         (function (uid) {
           if (uid === me) { return; }
           var nm = v[uid].name || "";
-          if (nm.indexOf(q) === -1) { return; }
+          if (nm.toLowerCase().indexOf(q) === -1) { return; }
           found++;
           var b = document.createElement("button");
           b.className = "room-btn secondary";
@@ -1807,13 +1928,13 @@
       }
       db.ref("dmRequests/" + toUid + "/" + me).once("value", function (s2) {
         if (s2.exists()) { showDmOk("Request already sent — waiting for them."); return; }
-        db.ref("dmRequests/" + toUid + "/" + me).set(
-          { fromUid: me, fromName: displayName(), at: Date.now() },
-          function (err) {
-            if (err) { showDmError("Could not send request."); return; }
+        var reqData = { fromUid: me, fromName: displayName(), at: Date.now() };
+        db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
+          if (err) { showDmError("Could not send request."); return; }
+          db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function () {
             showDmOk("Request sent to " + name + "! They'll see a dot on their DMs.");
-          }
-        );
+          });
+        });
       });
     });
   }
@@ -1828,6 +1949,7 @@
     updates["userDms/" + me + "/" + fromUid] = { dmId: dmId, name: fromName, at: now };
     updates["userDms/" + fromUid + "/" + me] = { dmId: dmId, name: displayName(), at: now };
     updates["dmRequests/" + me + "/" + fromUid] = null;
+    updates["dmRequestsOut/" + fromUid + "/" + me] = null;
     db.ref().update(updates, function (err) {
       if (!err) { openDm(dmId, fromName); }
     });
@@ -1928,15 +2050,25 @@
     });
   }
   var dashSearchTimer = null;
+  function dashAwardBadge(uid, name) {
+    var bid = prompt("Badge ID for " + name + "?\n(oct2026-gold, oct2026-silver, oct2026-bronze, oct2026-team)", "oct2026-team");
+    if (!bid || !BADGE_DEFS[bid]) { flashNotice("unknown badge id."); return; }
+    db.ref("userBadges/" + uid + "/" + bid).set({ at: Date.now() }, function (err) {
+      if (!err) { flashNotice("badge awarded to " + name + "!"); }
+    });
+  }
   function dashSearchUsers() {
     var input = document.getElementById("dash-search");
     var box = document.getElementById("dash-search-results");
     var q = String(input.value || "").trim().toLowerCase();
     if (q.length < 2) { box.innerHTML = ""; return; }
     box.innerHTML = "<p>searching...</p>";
-    db.ref("users").orderByChild("name").startAt(q).endAt(q + "\uf8ff").limitToFirst(10).once("value", function (snap) {
+    db.ref("users").limitToFirst(200).once("value", function (snap) {
       var v = snap.val() || {};
-      var keys = Object.keys(v);
+      var keys = Object.keys(v).filter(function (uid) {
+        var nm = (v[uid] && v[uid].name) || "";
+        return nm.toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 10);
       box.innerHTML = "";
       if (!keys.length) { box.innerHTML = "<p>no matches</p>"; return; }
       keys.forEach(function (uid) {
@@ -1948,7 +2080,7 @@
             b.className = "secondary";
             b.style.textAlign = "left";
             b.textContent = (rec.name || "?") + " \u2014 " + xpAmt + " xp";
-            var tt = (typeof teamTagForUid === "function") ? teamTagForUid(u) : null;
+
             if (tt) { b.appendChild(tt); }
             b.onclick = function () {
               document.getElementById("dash-xp-user").value = rec.name || "";
@@ -1956,7 +2088,14 @@
               box.innerHTML = "";
               flashNotice("selected " + (rec.name || "?"));
             };
-            box.appendChild(b);
+            var ab = document.createElement("button");
+            ab.className = "mini secondary";
+            ab.textContent = "award badge";
+            ab.style.marginLeft = "6px";
+            ab.onclick = function () { dashAwardBadge(uid, rec.name || "?"); };
+            var wrap = document.createElement("div");
+            wrap.appendChild(b); wrap.appendChild(ab);
+            box.appendChild(wrap);
           });
         })(uid, v[uid]);
       });
@@ -2030,10 +2169,25 @@
         dis.className = "mini secondary";
         dis.textContent = "dismiss";
         dis.onclick = function () { db.ref("reports/" + k).remove(); };
+        var help = document.createElement("button");
+        help.className = "mini";
+        help.textContent = "helpful (+5 xp)";
+        help.onclick = function () {
+          askConfirm("Mark helpful? " + (r.reporterName || "reporter") + " gets +5 xp.", function () {
+            if (r.reporter) {
+              changeXp(r.reporter, 5);
+              db.ref("users/" + r.reporter + "/helpfulReports").transaction(function (cur) {
+                return (typeof cur === "number" ? cur : 0) + 1;
+              });
+            }
+            db.ref("reports/" + k).remove();
+          });
+        };
         row.appendChild(view);
         row.appendChild(del);
         row.appendChild(ban);
         row.appendChild(dis);
+        row.appendChild(help);
         box.appendChild(row);
       })(keys[i]);
     }
@@ -2095,9 +2249,14 @@
   })();
   function banUser(uid, name) {
     if (!uid) { return; }
-    var rec = { name: name || "user", at: Date.now(), by: displayName() };
+    var reasonEl = document.getElementById("ban-reason");
+    var reason = reasonEl ? reasonEl.value.replace(/^\s+|\s+$/g, "") : "";
+    var rec = { name: name || "user", at: Date.now(), by: displayName(), reason: reason || "no reason given" };
     if (banMinutes > 0) { rec.until = Date.now() + banMinutes * 60000; }
-    db.ref("bans/" + uid).set(rec, function () { wipeBannedContent(uid); });
+    db.ref("bans/" + uid).set(rec, function () {
+      if (reasonEl) { reasonEl.value = ""; }
+      wipeBannedContent(uid);
+    });
   }
   /* delete everything a banned user posted: room + dm messages, hood posts/comments, suggestions/comments */
   function wipeBannedContent(uid) {
@@ -2178,6 +2337,20 @@
     if (dashSearchTimer) { clearTimeout(dashSearchTimer); }
     dashSearchTimer = setTimeout(dashSearchUsers, 300);
   };
+  document.getElementById("dash-bans-toggle").onclick = function () {
+    var w = document.getElementById("dash-bans-wrap");
+    var t = document.getElementById("dash-bans-toggle");
+    var show = w.className.indexOf("hidden") >= 0;
+    w.className = show ? "section-body" : "hidden section-body";
+    t.textContent = show ? "banned list \u2212" : "banned list +";
+  };
+  document.getElementById("dash-mods-toggle").onclick = function () {
+    var w = document.getElementById("dash-mods-list-wrap");
+    var t = document.getElementById("dash-mods-toggle");
+    var show = w.className.indexOf("hidden") >= 0;
+    w.className = show ? "section-body" : "hidden section-body";
+    t.textContent = show ? "moderator list \u2212" : "moderator list +";
+  };
   document.getElementById("ban-add-btn").onclick = function () {
     var name = document.getElementById("ban-input").value.replace(/^\s+|\s+$/g, "").toLowerCase();
     if (!validUsername(name)) { return; }
@@ -2250,6 +2423,10 @@
       document.getElementById("profile-ok").textContent = "";
       refreshHome();
       showScreen("profile-screen");
+      renderMyBadges();
+      db.ref("users/" + u.uid + "/helpfulReports").once("value", function (snap) {
+        document.getElementById("my-helpful").textContent = snap.val() || 0;
+      });
     });
     db.ref("follows/" + u.uid).once("value", function (snap) {
       var box = document.getElementById("following-list");
@@ -2310,6 +2487,8 @@
       return;
     }
     try { localStorage.setItem("readium_tz", tz); } catch (e) {}
+    var u = auth.currentUser;
+    if (u) { db.ref("users/" + u.uid + "/timezone").set(tz); }
     st.textContent = "current timezone: " + tz;
     updateClock();
   };
@@ -2452,6 +2631,7 @@
         fb.textContent = snap.exists() ? "unfollow" : "follow";
       });
     }
+    renderPopupBadges(uid);
     document.getElementById("profile-popup").className = "";
   }
   document.getElementById("pp-close-btn").onclick = function () {
@@ -2478,7 +2658,12 @@
   };
   document.getElementById("pp-tip-btn").onclick = function () {
     if (!ppUid || ppUid === myUid()) { return; }
-    askConfirm("Tip 10 xp to " + document.getElementById("pp-name").textContent + "?", function () { tipXp(ppUid, 10); });
+    var amtStr = prompt("How much xp to tip (1-50)?", "10");
+    if (amtStr === null) { return; }
+    var amt = parseInt(amtStr, 10);
+    if (isNaN(amt) || amt < 1) { flashNotice("enter a number from 1 to 50."); return; }
+    if (amt > 50) { amt = 50; }
+    askConfirm("Tip " + amt + " xp to " + document.getElementById("pp-name").textContent + "?", function () { tipXp(ppUid, amt); });
   };
   document.getElementById("pp-dm-btn").onclick = function () {
     var name = document.getElementById("pp-name").textContent;
@@ -2658,12 +2843,7 @@
     if (ptag) { ns.appendChild(ptag); }
     var cttag = teamTagForUid(urecF ? urecF.uid : null);
     if (cttag) { ns.appendChild(cttag); }
-    if (urecF && urecF.rec.title) {
-      var ttl = document.createElement("div");
-      ttl.style.fontSize = "13px";
-      ttl.textContent = censor(urecF.rec.title);
-      head.appendChild(ttl);
-    }
+    // (old v1 titles removed)
     var ts = document.createElement("span");
     ts.className = "time";
     ts.textContent = fmtClockTime(m.ts) + (m.edited ? " (edited)" : "");
@@ -2974,8 +3154,7 @@
     head.appendChild(b);
     var hpt = petTagForName(p.name);
     if (hpt) { head.appendChild(hpt); }
-    var httag = teamTagForUid(p.uid);
-    if (httag) { head.appendChild(httag); }
+
     var ts = document.createElement("span");
     ts.style.fontSize = "14px";
     ts.style.color = "#555555";
@@ -3059,13 +3238,18 @@
         var c = data[k] || {};
         var d = document.createElement("div");
         d.style.cssText = "font-size:17px;border-top:1px solid #999999;padding:6px 0;";
+        if (c.uid) {
+          var cpi = pfpImg(null, 1);
+          cpi.style.verticalAlign = "middle"; cpi.style.marginRight = "6px";
+          fillPfpImg(cpi, c.uid);
+          d.appendChild(cpi);
+        }
         var nm = document.createElement("b");
         nm.textContent = censor(c.name || "Reader") + ": ";
         var tx = document.createElement("span");
         tx.textContent = censor(c.text || "");
         d.appendChild(nm);
-        var hcttag = teamTagForUid(c.uid);
-        if (hcttag) { d.appendChild(hcttag); }
+
         d.appendChild(tx);
         if (auth.currentUser && (isMod || c.uid === myUid())) {
           var del = document.createElement("button");
@@ -3183,6 +3367,25 @@
   document.getElementById("hood-post-btn").onclick = hoodPost;
   document.getElementById("hood-home-btn").onclick = goHome;
 
+  function applyTheme() {
+    var dark = false;
+    try { dark = localStorage.getItem("readium_theme") === "dark"; } catch (e) {}
+    try { document.body.className = document.body.className.replace(/\bdark\b/g, "").replace(/^\s+|\s+$/g, ""); } catch (e2) {}
+    if (dark) { document.body.className = (document.body.className + " dark").replace(/^\s+|\s+$/g, ""); }
+    var lb = document.getElementById("theme-light-btn");
+    var db = document.getElementById("theme-dark-btn");
+    if (lb) { lb.textContent = dark ? "light mode" : "light mode \u2713"; }
+    if (db) { db.textContent = dark ? "dark mode \u2713" : "dark mode"; }
+  }
+  document.getElementById("theme-light-btn").onclick = function () {
+    try { localStorage.setItem("readium_theme", "light"); } catch (e) {}
+    applyTheme();
+  };
+  document.getElementById("theme-dark-btn").onclick = function () {
+    try { localStorage.setItem("readium_theme", "dark"); } catch (e) {}
+    applyTheme();
+  };
+  applyTheme();
   function applyFontSize() {
     var big = false;
     try { big = localStorage.getItem("readium_bigfont") === "1"; } catch (e) {}
@@ -3346,7 +3549,15 @@
   document.getElementById("g-tile-life").onclick = function () { enterLife(); };
   document.getElementById("g-tile-gol").onclick = function () { enterGol(); };
   document.getElementById("g-tile-sol").onclick = function () { enterSol(); };
-  document.getElementById("home-log-btn").onclick = function () { showScreen("log-screen"); };
+  document.getElementById("g-tile-critter").onclick = function () { enterCritter(); };
+  (function () {
+    var btns = document.getElementsByClassName("game-help-btn");
+    for (var i = 0; i < btns.length; i++) {
+      (function (b) {
+        b.onclick = function () { flashNotice(b.getAttribute("data-help")); };
+      })(btns[i]);
+    }
+  })();
   document.getElementById("log-back-btn").onclick = goHome;
   document.getElementById("gm-bot-btn").onclick = function () { if (gmGame === "ttt") { startBotGame(); } else if (gmGame === "c4") { startC4Bot(); } else if (gmGame === "chess") { startChessBot(); } };
   document.getElementById("gm-host-btn").onclick = function () { if (gmGame === "ttt") { hostGame(); } else if (gmGame === "c4") { hostC4Game(); } else if (gmGame === "chess") { hostChessGame(); } else if (gmGame === "pic") { hostPicGame(); } };
@@ -3500,13 +3711,39 @@
     document.getElementById("sol-msg").textContent = "";
     solRender();
   }
+  var SOL_SUITS = ["\u2660", "\u2665", "\u2666", "\u2663"]; // spade heart diamond club
   function solCardDiv(card, selected, pileKind, pileIdx, cardIdx) {
     var d = document.createElement("div");
-    d.style.cssText = "width:52px;height:70px;border:2px solid #111;background:" +
-      (card.up ? "#fff" : "#5577aa") + ";color:" + (solRed(card) ? "#cc0000" : "#111111") +
-      ";font-size:18px;font-weight:bold;text-align:center;line-height:70px;" +
-      (selected ? "outline:3px solid #ff8800;" : "") + "cursor:pointer;flex:none;";
-    d.textContent = card.up ? (solRank(card.r) + "SHDC"[card.s]) : "";
+    var red = solRed(card);
+    // light bg for red suits, dark bg for black suits
+    var bg = card.up ? (red ? "#fffdf5" : "#2b2b2b") : "#5577aa";
+    var fg = card.up ? (red ? "#cc0000" : "#f5f5f5") : "#fff";
+    d.style.cssText = "width:52px;height:70px;border:2px solid #111;border-radius:8px;background:" + bg +
+      ";color:" + fg + ";font-weight:bold;position:relative;" +
+      (selected ? "outline:3px solid #ff8800;" : "") + "cursor:pointer;flex:none;" +
+      "box-shadow:1px 1px 2px rgba(0,0,0,0.3);overflow:hidden;";
+    if (card.up) {
+      var rank = solRank(card.r);
+      var suit = SOL_SUITS[card.s];
+      // top-left corner
+      var tl = document.createElement("div");
+      tl.style.cssText = "position:absolute;top:2px;left:4px;font-size:13px;line-height:1.1;text-align:center;";
+      tl.innerHTML = rank + "<br>" + suit;
+      d.appendChild(tl);
+      // center pip
+      var cp = document.createElement("div");
+      cp.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;";
+      cp.textContent = suit;
+      d.appendChild(cp);
+      // bottom-right corner (rotated)
+      var br = document.createElement("div");
+      br.style.cssText = "position:absolute;bottom:2px;right:4px;font-size:13px;line-height:1.1;text-align:center;transform:rotate(180deg);";
+      br.innerHTML = rank + "<br>" + suit;
+      d.appendChild(br);
+    } else {
+      // card back pattern
+      d.style.background = "repeating-linear-gradient(45deg,#5577aa,#5577aa 6px,#446688 6px,#446688 12px)";
+    }
     d.onclick = (function (pk, pi, ci) {
       return function () { solTap(pk, pi, ci); };
     })(pileKind, pileIdx, cardIdx);
@@ -5028,10 +5265,17 @@ function tipXp(toUid, amount) {
   flashNotice("tipped " + amount + " xp!");
 }
 var storeItems = [
-  { id: "pet", name: "pixel pet", desc: "a tiny pet by your name in chat — pick your favorite", cost: 80 },
-  { id: "theme", name: "profile theme", desc: "a patterned background for your profile", cost: 60 },
-  { id: "boost", name: "xp boost", desc: "double xp for 24 hours", cost: 120 },
-  { id: "box", name: "mystery box", desc: "a random surprise — could be anything", cost: 30 }
+  { id: "pet_cat", kind: "pet", petKey: "cat", name: "cat pet", desc: "a tiny cat by your name in chat", cost: 80 },
+  { id: "pet_dog", kind: "pet", petKey: "dog", name: "dog pet", desc: "a tiny dog by your name in chat", cost: 80 },
+  { id: "pet_frog", kind: "pet", petKey: "frog", name: "frog pet", desc: "a tiny frog by your name in chat", cost: 80 },
+  { id: "pet_penguin", kind: "pet", petKey: "penguin", name: "penguin pet", desc: "a tiny penguin by your name in chat", cost: 80 },
+  { id: "pet_dragon", kind: "pet", petKey: "dragon", name: "dragon pet", desc: "a rare tiny dragon by your name in chat", cost: 150 },
+  { id: "theme_dots", kind: "theme", themeKey: "dots", name: "dots theme", desc: "dotted background for your profile", cost: 60 },
+  { id: "theme_stripes", kind: "theme", themeKey: "stripes", name: "stripes theme", desc: "striped background for your profile", cost: 60 },
+  { id: "theme_grid", kind: "theme", themeKey: "grid", name: "grid theme", desc: "grid background for your profile", cost: 60 },
+  { id: "theme_checker", kind: "theme", themeKey: "checker", name: "checker theme", desc: "checkerboard background for your profile", cost: 60 },
+  { id: "boost", kind: "boost", name: "xp boost", desc: "double xp for 24 hours", cost: 120 },
+  { id: "box", kind: "box", name: "mystery box", desc: "a random surprise — could be anything", cost: 30 }
 ];
 var themeDefs = [
   { id: "dots", name: "dots", cls: "ptheme-dots" },
@@ -5086,14 +5330,21 @@ function loadBoard() {
           var nm = document.createElement("span");
           var urec = users[r.uid];
           nm.textContent = (urec && urec.name) || "???";
+          if (nm.textContent === "???" && r.uid) {
+            (function (nmEl, uid) {
+              db.ref("users/" + uid + "/name").once("value", function (nsnap) {
+                var n = nsnap.val();
+                if (n) { nmEl.textContent = n; styleModName(nmEl, uid, n); }
+              });
+            })(nm, r.uid);
+          }
           styleModName(nm, r.uid, nm.textContent);
           var ptt = petTagFor(urec ? urec.pet : null);
-          var bttag = teamTagForUid(r.uid);
+
           var xp = document.createElement("span");
           xp.className = "board-xp"; xp.textContent = r.xp + " xp";
           row.appendChild(rk); row.appendChild(nm);
           if (ptt) { row.appendChild(ptt); }
-          if (bttag) { row.appendChild(bttag); }
           row.appendChild(xp);
           list.appendChild(row);
         })(rows[i], i);
@@ -5105,91 +5356,162 @@ function enterStore() {
   showScreen("store-screen");
   renderStore();
 }
+function storeOwned(itemId) {
+  return !!(myStore && myStore[itemId]);
+}
+function openStoreDetails(it) {
+  var me = myUid();
+  document.getElementById("store-d-name").textContent = it.name;
+  document.getElementById("store-d-desc").textContent = it.desc;
+  document.getElementById("store-d-cost").textContent = it.cost + " xp";
+  var prev = document.getElementById("store-d-preview");
+  prev.innerHTML = "";
+  var opts = document.getElementById("store-d-options");
+  opts.innerHTML = "";
+  if (it.kind === "pet") {
+    var img = document.createElement("img");
+    img.src = petSprites[it.petKey];
+    img.style.width = "96px"; img.style.height = "96px";
+    img.style.imageRendering = "pixelated";
+    prev.appendChild(img);
+  } else if (it.kind === "theme") {
+    // preview: mock profile with theme background
+    var mock = document.createElement("div");
+    mock.style.cssText = "border:2px solid #111;padding:16px;max-width:280px;margin:0 auto;";
+    var def = themeDefFor(it.themeKey);
+    if (def) { mock.className = def.cls; }
+    mock.innerHTML = "<p><b>" + censor(displayName()) + "</b></p><p style='font-size:14px'>this is how your profile would look!</p>";
+    prev.appendChild(mock);
+    // option selector to preview other themes
+    var lbl = document.createElement("p");
+    lbl.style.fontSize = "15px"; lbl.textContent = "preview other themes:";
+    opts.appendChild(lbl);
+    themeDefs.forEach(function (td) {
+      var b = document.createElement("button");
+      b.className = "mini secondary";
+      b.textContent = td.name;
+      b.style.margin = "2px";
+      b.onclick = function () {
+        mock.className = "";
+        mock.className = td.cls;
+      };
+      opts.appendChild(b);
+    });
+  } else if (it.kind === "boost") {
+    prev.innerHTML = "<p style='font-size:48px'>\u26a1</p><p>2x xp for 24 hours!</p>";
+  } else if (it.kind === "box") {
+    prev.innerHTML = "<p style='font-size:48px'>?</p><p>could be xp, a pet, a theme, or a boost!</p>";
+  }
+  var buyBtn = document.getElementById("store-d-buy");
+  if (storeOwned(it.id)) {
+    buyBtn.textContent = "owned!";
+    buyBtn.disabled = true;
+  } else {
+    buyBtn.textContent = "buy (" + it.cost + " xp)";
+    buyBtn.disabled = false;
+    buyBtn.onclick = function () { storeBuyItem(it); };
+  }
+  document.getElementById("store-modal").className = "";
+}
+document.getElementById("store-d-close").onclick = function () {
+  document.getElementById("store-modal").className = "hidden";
+};
+function storeBuyItem(it) {
+  var me = myUid();
+  if (myXp < it.cost) { flashNotice("not enough xp!"); return; }
+  if (it.kind === "box") {
+    changeXp(me, -it.cost);
+    openMysteryBox();
+    document.getElementById("store-modal").className = "hidden";
+    return;
+  }
+  if (it.kind === "boost") {
+    changeXp(me, -it.cost);
+    var until = Math.max(Date.now(), myBoostUntil || 0) + 24 * 3600 * 1000;
+    db.ref("users/" + me + "/xpBoostUntil").set(until, function () {
+      myBoostUntil = until; renderStore(); refreshHome();
+      flashNotice("2x xp for 24 hours!");
+      document.getElementById("store-modal").className = "hidden";
+    });
+    return;
+  }
+  // pet or theme: buy individual
+  changeXp(me, -it.cost);
+  var up = {};
+  up["store/" + me + "/" + it.id] = true;
+  db.ref().update(up, function (err) {
+    if (!err) {
+      if (!myStore) { myStore = {}; }
+      myStore[it.id] = true;
+      // auto-select the purchased item
+      if (it.kind === "pet") {
+        db.ref("users/" + me + "/pet").set(it.petKey, function () { myPet = it.petKey; });
+      } else if (it.kind === "theme") {
+        db.ref("users/" + me + "/theme").set(it.themeKey, function () { myTheme = it.themeKey; });
+      }
+      renderStore(); refreshHome();
+      flashNotice(it.name + " purchased!");
+      document.getElementById("store-modal").className = "hidden";
+    } else {
+      flashNotice("purchase failed.");
+    }
+  });
+}
 function renderStore() {
   var box = document.getElementById("store-items");
   if (!box) { return; }
   box.innerHTML = "";
   var sx = document.getElementById("store-xp");
   if (sx) { sx.textContent = myXp; }
-  var me = myUid();
+  // owned pets/themes pickers
+  var ownedPets = [], ownedThemes = [];
   for (var i = 0; i < storeItems.length; i++) {
+    var it = storeItems[i];
+    if (it.kind === "pet" && storeOwned(it.id)) { ownedPets.push(it.petKey); }
+    if (it.kind === "theme" && storeOwned(it.id)) { ownedThemes.push(it.themeKey); }
+  }
+  if (ownedPets.length) {
+    var pl = document.createElement("p");
+    pl.style.fontSize = "15px"; pl.textContent = "your pets — pick one:";
+    box.appendChild(pl);
+    var prow = document.createElement("div");
+    petPickerInto(prow, myPet, function (key) {
+      db.ref("users/" + myUid() + "/pet").set(key, function () {
+        myPet = key; renderStore(); refreshHome(); flashNotice("pet set!");
+      });
+    }, ownedPets);
+    box.appendChild(prow);
+  }
+  if (ownedThemes.length) {
+    var tl = document.createElement("p");
+    tl.style.fontSize = "15px"; tl.textContent = "your themes — pick one:";
+    box.appendChild(tl);
+    var trow = document.createElement("div");
+    themePickerInto(trow, myTheme, function (key) {
+      db.ref("users/" + myUid() + "/theme").set(key, function () {
+        myTheme = key; renderStore(); flashNotice("theme set!");
+      });
+    }, ownedThemes);
+    box.appendChild(trow);
+  }
+  // item list (tap for details)
+  for (var j = 0; j < storeItems.length; j++) {
     (function (it) {
       var row = document.createElement("div");
       row.className = "req-row";
+      row.style.cursor = "pointer";
       var t = document.createElement("p");
       var b = document.createElement("b");
-      b.textContent = it.name + " — " + it.cost + " xp";
+      b.textContent = it.name + " — " + it.cost + " xp" + (storeOwned(it.id) ? " (owned)" : "");
       t.appendChild(b);
       row.appendChild(t);
       var d = document.createElement("p");
       d.style.fontSize = "15px";
       d.textContent = it.desc;
       row.appendChild(d);
-      if (it.id === "pet") {
-        if (myStore && myStore.pet) {
-          var pl = document.createElement("p");
-          pl.style.fontSize = "15px"; pl.textContent = "pick your pet:";
-          row.appendChild(pl);
-          petPickerInto(row, myPet, function (key) {
-            db.ref("users/" + me + "/pet").set(key, function () {
-              myPet = key; renderStore(); refreshHome(); flashNotice("pet set!");
-            });
-          });
-        } else {
-          row.appendChild(storeBuyBtn(it, function () {
-            var up = {}; up["store/" + me + "/pet"] = true;
-            db.ref().update(up, function () {
-              myStore.pet = true; renderStore();
-              flashNotice("pet unlocked — pick one!");
-            });
-          }));
-        }
-      } else if (it.id === "theme") {
-        if (myStore && myStore.theme) {
-          var tl = document.createElement("p");
-          tl.style.fontSize = "15px"; tl.textContent = "pick your theme:";
-          row.appendChild(tl);
-          themePickerInto(row, myTheme, function (key) {
-            db.ref("users/" + me + "/theme").set(key, function () {
-              myTheme = key; renderStore(); flashNotice("theme set!");
-            });
-          });
-        } else {
-          row.appendChild(storeBuyBtn(it, function () {
-            var up = {}; up["store/" + me + "/theme"] = true;
-            db.ref().update(up, function () {
-              myStore.theme = true; renderStore();
-              flashNotice("theme unlocked — pick one!");
-            });
-          }));
-        }
-      } else if (it.id === "boost") {
-        var st = document.createElement("p");
-        st.style.fontSize = "15px";
-        if (myBoostUntil && Date.now() < myBoostUntil) {
-          st.textContent = "active! ends " + fmtClockTime(myBoostUntil) + ". buy again to extend.";
-        } else {
-          st.textContent = "not active.";
-        }
-        row.appendChild(st);
-        var bb = document.createElement("button");
-        bb.className = "mini";
-        bb.textContent = "buy (" + it.cost + " xp)";
-        bb.onclick = function () {
-          if (myXp < it.cost) { flashNotice("not enough xp!"); return; }
-          var until = Math.max(Date.now(), myBoostUntil || 0) + 24 * 3600 * 1000;
-          changeXp(me, -it.cost);
-          db.ref("users/" + me + "/xpBoostUntil").set(until, function () {
-            myBoostUntil = until; renderStore(); refreshHome();
-            flashNotice("2x xp for 24 hours!");
-          });
-        };
-        row.appendChild(bb);
-      } else if (it.id === "box") {
-        row.appendChild(storeBuyBtn(it, openMysteryBox, true));
-      }
+      row.onclick = function () { openStoreDetails(it); };
       box.appendChild(row);
-    })(storeItems[i]);
+    })(storeItems[j]);
   }
 }
 function storeBuyBtn(it, after, consumable) {
@@ -5206,8 +5528,9 @@ function storeBuyBtn(it, after, consumable) {
   };
   return buy;
 }
-function petPickerInto(row, current, onPick) {
+function petPickerInto(row, current, onPick, owned) {
   var keys = Object.keys(petSprites);
+  if (owned) { keys = keys.filter(function (k) { return owned.indexOf(k) !== -1; }); }
   for (var i = 0; i < keys.length; i++) {
     (function (key) {
       var d = document.createElement("div");
@@ -5223,15 +5546,17 @@ function petPickerInto(row, current, onPick) {
     })(keys[i]);
   }
 }
-function themePickerInto(row, current, onPick) {
-  for (var i = 0; i < themeDefs.length; i++) {
+function themePickerInto(row, current, onPick, owned) {
+  var defs = themeDefs;
+  if (owned) { defs = defs.filter(function (td) { return owned.indexOf(td.id) !== -1; }); }
+  for (var i = 0; i < defs.length; i++) {
     (function (td) {
       var d = document.createElement("div");
       d.className = "theme-swatch " + td.cls + (current === td.id ? " sel" : "");
       d.title = td.name;
       d.onclick = function () { onPick(td.id); };
       row.appendChild(d);
-    })(themeDefs[i]);
+    })(defs[i]);
   }
 }
 function openMysteryBox() {
@@ -5268,10 +5593,7 @@ function openMysteryBox() {
 }
 
 function flairName(name, rec) {
-  var n = name || "Reader";
-  if (rec && rec.flair === "star") { n = "★ " + n; }
-  else if (rec && rec.flair === "goldname") { n = "✦ " + n + " ✦"; }
-  return n;
+  return name || "Reader";
 }
 
     /* ---------- life sim (bitlife-style, 100% local) ---------- */
@@ -5297,6 +5619,11 @@ function flairName(name, rec) {
   function lifeBoyName() { return rpick(LIFE_MALE) + " " + rpick(LIFE_LAST); }
   function lifeGirlName() { return rpick(LIFE_FEMALE) + " " + rpick(LIFE_LAST); }
   function lifeRandName() { return rchance(0.5) ? lifeBoyName() : lifeGirlName(); }
+  function lifeSetHabits() {
+    // called yearly: consistent exercise + doctor visits = healthy habits
+    if (!life.habitYears) { life.habitYears = 0; }
+    // (incremented by mind+body actions)
+  }
   function lifeClamp() {
     var s = life.stats;
     s.happy = Math.max(0, Math.min(100, s.happy));
@@ -5443,6 +5770,7 @@ function flairName(name, rec) {
     return bits.join(" - ");
   }
   function lifeRender() {
+    try { lifeRefreshTabLocks(); } catch (e) {}
     if (!life) { return; }
     var h = "<p><b>" + escapeHtml(life.name) + "</b>, age " + life.age + " — " + fmtMoney(life.money) + "</p>";
     var st = lifeStatusLine();
@@ -5593,6 +5921,21 @@ function flairName(name, rec) {
       life.money -= pay;
       life.loans -= pay;
     }
+    // exercise streak -> healthy habits (strategic longevity)
+    if (life.exercisedThisYear) {
+      life.exerciseYears = (life.exerciseYears || 0) + 1;
+      if (life.exerciseYears >= 3 && !life.healthyHabits) {
+        life.healthyHabits = true;
+        lifeLog("has built healthy habits! (lower death risk)");
+      }
+    } else {
+      life.exerciseYears = 0;
+      if (life.healthyHabits && life.age > 50) {
+        // habits fade if you stop
+        life.healthyHabits = false;
+      }
+    }
+    life.exercisedThisYear = false;
     // stat drift
     if (life.age > 40) { life.stats.health -= 1; }
     if (life.age > 60) { life.stats.health -= 2; }
@@ -5626,16 +5969,20 @@ function flairName(name, rec) {
     // sickness worsens
     if (life.sick === "cancer" && rchance(0.25)) { return lifeDie("cancer"); }
     if (life.sick === "heart disease" && rchance(0.2)) { return lifeDie("a heart attack"); }
-    // natural death
+    // natural death (fixed: steeper curve, hard cap, "old age" only 70+)
+    if (life.age >= 120) { return lifeDie("old age"); }
     var deathP = 0;
     if (life.age >= 50 && life.age < 60) { deathP = 0.005; }
     else if (life.age < 70) { deathP = 0.015; }
-    else if (life.age < 80) { deathP = 0.04; }
-    else if (life.age < 90) { deathP = 0.10; }
-    else { deathP = 0.25; }
+    else if (life.age < 80) { deathP = 0.05; }
+    else if (life.age < 90) { deathP = 0.15; }
+    else if (life.age < 100) { deathP = 0.35; }
+    else { deathP = 0.6; }
     if (life.stats.health < 20) { deathP *= 3; }
     else if (life.stats.health < 40) { deathP *= 1.5; }
-    if (rchance(deathP)) { return lifeDie("old age"); }
+    // good habits protect you: exercise/diet reduce death risk
+    if (life.healthyHabits) { deathP *= 0.7; }
+    if (rchance(deathP)) { return lifeDie(life.age >= 70 ? "old age" : "a sudden illness"); }
     if (life.stats.health <= 0) { return lifeDie("failing health"); }
     lifeClamp();
     lifeSave();
@@ -6254,6 +6601,7 @@ function flairName(name, rec) {
       life.money -= 50;
       life.stats.health += rrange(3, 8);
       life.stats.happy += 2;
+      life.exercisedThisYear = true;
       lifeLog("hit the gym.");
       if (rchance(0.05)) { life.stats.health -= 8; lifeLog("pulled a muscle at the gym."); }
       lifeAfterAction();
@@ -6261,6 +6609,7 @@ function flairName(name, rec) {
     lifeMkBtn(panel, "go for a walk", function () {
       life.stats.health += rrange(1, 4);
       life.stats.happy += rrange(1, 4);
+      life.exercisedThisYear = true;
       lifeLog("went for a walk.");
       lifeAfterAction();
     });
@@ -6681,17 +7030,569 @@ function flairName(name, rec) {
     }
     box.appendChild(card);
   }
-  /* ----- menu wiring ----- */
-  document.getElementById("lm-school-btn").onclick = function () { lifePanelName = "school"; lifeRenderPanel(); };
-  document.getElementById("lm-assets-btn").onclick = function () { lifePanelName = "assets"; lifeRenderPanel(); };
-  document.getElementById("lm-love-btn").onclick = function () { lifePanelName = "love"; lifeRenderPanel(); };
+  /* ----- menu wiring + age locks ----- */
+  function lifeTabMinAge(tab) {
+    if (tab === "school") { return 6; }
+    if (tab === "assets") { return 18; }
+    if (tab === "love") { return 16; }
+    if (tab === "crime") { return 13; }
+    return 0;
+  }
+  function lifeTabLocked(tab) { return life && life.age < lifeTabMinAge(tab); }
+  function lifeRefreshTabLocks() {
+    var tabs = { "lm-school-btn": "school", "lm-assets-btn": "assets", "lm-love-btn": "love", "lm-crime-btn": "crime" };
+    for (var id in tabs) {
+      var b = document.getElementById(id);
+      if (b) { b.disabled = lifeTabLocked(tabs[id]); b.style.opacity = lifeTabLocked(tabs[id]) ? "0.4" : "1"; }
+    }
+  }
+  document.getElementById("lm-school-btn").onclick = function () {
+    if (lifeTabLocked("school")) { lifeLog("too young for school!"); return; }
+    lifePanelName = "school"; lifeRenderPanel();
+  };
+  document.getElementById("lm-assets-btn").onclick = function () {
+    if (lifeTabLocked("assets")) { lifeLog("too young to own assets!"); return; }
+    lifePanelName = "assets"; lifeRenderPanel();
+  };
+  document.getElementById("lm-love-btn").onclick = function () {
+    if (lifeTabLocked("love")) { lifeLog("too young for love!"); return; }
+    lifePanelName = "love"; lifeRenderPanel();
+  };
   document.getElementById("lm-family-btn").onclick = function () { lifePanelName = "family"; lifeRenderPanel(); };
   document.getElementById("lm-social-btn").onclick = function () { lifePanelName = "social"; lifeRenderPanel(); };
   document.getElementById("lm-body-btn").onclick = function () { lifePanelName = "body"; lifeRenderPanel(); };
-  document.getElementById("lm-crime-btn").onclick = function () { lifePanelName = "crime"; lifeRenderPanel(); };
+  document.getElementById("lm-crime-btn").onclick = function () {
+    if (lifeTabLocked("crime")) { lifeLog("too young for crime!"); return; }
+    lifePanelName = "crime"; lifeRenderPanel();
+  };
   document.getElementById("lm-fun-btn").onclick = function () { lifePanelName = "fun"; lifeRenderPanel(); };
 
-/* ---------- suggestions ---------- */
+  /* ---------- team members ---------- */
+  function loadEventTeams() {
+    var box = document.getElementById("event-teams-list");
+    if (!box) { return; }
+    db.ref("eventTeams").once("value", function (snap) {
+      var teams = snap.val() || {};
+      db.ref("users").once("value", function (usnap) {
+        var users = usnap.val() || {};
+        var byTeam = { pumpkin: [], blackcat: [], ghost: [], bat: [] };
+        for (var uid in teams) {
+          var t = teams[uid];
+          var nm = (users[uid] && users[uid].name) || "???";
+          if (byTeam[t]) { byTeam[t].push(nm); }
+        }
+        box.innerHTML = "";
+        var names = { pumpkin: "pumpkin", blackcat: "black cat", ghost: "ghost", bat: "bat" };
+        for (var key in byTeam) {
+          var h = document.createElement("h2");
+          h.textContent = names[key] + " (" + byTeam[key].length + ")";
+          h.style.color = "#fff";
+          box.appendChild(h);
+          var p = document.createElement("p");
+          p.style.color = "#fff";
+          p.textContent = byTeam[key].sort().join(", ") || "no members yet";
+          box.appendChild(p);
+        }
+      });
+    });
+  }
+  document.getElementById("event-teams-toggle").onclick = function () {
+    var w = document.getElementById("event-teams-wrap");
+    var t = document.getElementById("event-teams-toggle");
+    var show = w.className.indexOf("hidden") >= 0;
+    w.className = show ? "section-body" : "hidden section-body";
+    t.textContent = show ? "team members \u2212" : "team members +";
+    if (show) { loadEventTeams(); }
+  };
+
+  /* ---------- event badges ---------- */
+  // Badge images: 96x96 px PNG. Mia creates them; placeholders used until then.
+  var BADGE_DEFS = {
+    "oct2026-gold": { name: "October Event Champion", color: "#ffd700" },
+    "oct2026-silver": { name: "October Event Runner-up", color: "#c0c0c0" },
+    "oct2026-bronze": { name: "October Event 3rd Place", color: "#cd7f32" },
+    "oct2026-team": { name: "Winning Team", color: "#ff6600" }
+  };
+  function badgeImg(badgeId, size) {
+    var def = BADGE_DEFS[badgeId] || { name: badgeId, color: "#999999" };
+    var s = size || 48;
+    var d = document.createElement("div");
+    d.style.cssText = "display:inline-block;width:" + s + "px;height:" + s + "px;border-radius:50%;background:" + def.color + ";border:3px solid #111;text-align:center;line-height:" + s + "px;font-size:" + Math.round(s/2) + "px;margin:4px;vertical-align:middle;";
+    d.textContent = "\u2605";
+    d.title = def.name;
+    return d;
+  }
+  function renderMyBadges() {
+    var box = document.getElementById("my-badges");
+    if (!box || !myUid()) { return; }
+    db.ref("userBadges/" + myUid()).once("value", function (snap) {
+      var v = snap.val() || {};
+      var keys = Object.keys(v);
+      box.innerHTML = keys.length ? "" : "<p>no badges yet — win events to earn them!</p>";
+      keys.forEach(function (bid) {
+        box.appendChild(badgeImg(bid, 48));
+      });
+    });
+  }
+  // also show badges in profile popup (other users)
+  function renderPopupBadges(uid) {
+    var box = document.getElementById("pp-badges");
+    if (!box) { return; }
+    db.ref("userBadges/" + uid).once("value", function (snap) {
+      var v = snap.val() || {};
+      var keys = Object.keys(v);
+      box.innerHTML = "";
+      keys.forEach(function (bid) { box.appendChild(badgeImg(bid, 36)); });
+    });
+  }
+
+  function checkBanMessage() {
+    var u = auth.currentUser;
+    if (!u) { return; }
+    db.ref("bans/" + u.uid).once("value", function (snap) {
+      var b = snap.val();
+      if (!b) { return; }
+      var active = !b.until || b.until > Date.now();
+      if (!active) { return; }
+      var untilStr = b.until ? new Date(b.until).toLocaleString() : "forever";
+      var msg = "The account " + (b.name || "you") + " was banned for the following reason(s): " + (b.reason || "no reason given") + ". Ban in effect until " + untilStr + ".";
+      // show as a prominent notice
+      var card = document.getElementById("signin-card");
+      if (card) {
+        var div = document.createElement("div");
+        div.style.cssText = "background:#ffdddd;border:2px solid #cc0000;padding:12px;margin:12px 0;font-size:17px;";
+        div.textContent = msg;
+        card.insertBefore(div, card.firstChild);
+      } else {
+        alert(msg);
+      }
+    });
+  }
+
+  /* ---------- critter catch (pokemon-like) ---------- */
+  var CRITTERS = [
+    { id: "embercub", name: "Embercub", type: "fire", hp: 45, atk: 12, catch: 0.5 },
+    { id: "aquafin", name: "Aquafin", type: "water", hp: 50, atk: 10, catch: 0.5 },
+    { id: "leafhop", name: "Leafhop", type: "leaf", hp: 40, atk: 11, catch: 0.5 },
+    { id: "sparkpup", name: "Sparkpup", type: "spark", hp: 35, atk: 14, catch: 0.45 },
+    { id: "shadeling", name: "Shadeling", type: "shadow", hp: 55, atk: 9, catch: 0.4 },
+    { id: "frostbite", name: "Frostbite", type: "water", hp: 42, atk: 13, catch: 0.45 },
+    { id: "thornback", name: "Thornback", type: "leaf", hp: 60, atk: 8, catch: 0.4 },
+    { id: "cindercub", name: "Cindercub", type: "fire", hp: 38, atk: 15, catch: 0.45 },
+    { id: "voltpaw", name: "Voltpaw", type: "spark", hp: 33, atk: 16, catch: 0.4 },
+    { id: "mistwing", name: "Mistwing", type: "water", hp: 48, atk: 11, catch: 0.45 },
+    { id: "rootle", name: "Rootle", type: "leaf", hp: 52, atk: 10, catch: 0.45 },
+    { id: "duskpaw", name: "Duskpaw", type: "shadow", hp: 44, atk: 13, catch: 0.4 }
+  ];
+  var CRITTER_BEATS = { fire: "leaf", water: "fire", leaf: "water", spark: "water", shadow: "spark" };
+  var critterSave = null;
+  var critterBattle = null;
+  function critterLoad() {
+    try {
+      var s = localStorage.getItem("readium_critter");
+      critterSave = s ? JSON.parse(s) : null;
+    } catch (e) { critterSave = null; }
+    if (!critterSave) { critterSave = { team: [], box: [], traps: 5 }; }
+  }
+  function critterStore() {
+    try { localStorage.setItem("readium_critter", JSON.stringify(critterSave)); } catch (e) {}
+  }
+  function critterById(id) {
+    for (var i = 0; i < CRITTERS.length; i++) { if (CRITTERS[i].id === id) { return CRITTERS[i]; } }
+    return null;
+  }
+  function critterNew(id) {
+    var base = critterById(id);
+    return { id: id, name: base.name, type: base.type, maxHp: base.hp, hp: base.hp, atk: base.atk, lvl: 1 };
+  }
+  function enterCritter() {
+    critterLoad();
+    showScreen("critter-screen");
+    critterBattle = null;
+    critterRender();
+  }
+  function critterRender() {
+    var box = document.getElementById("critter-main");
+    box.innerHTML = "";
+    if (critterBattle) { return critterRenderBattle(box); }
+    // starter choice if no team
+    if (!critterSave.team.length) {
+      var h = document.createElement("h2");
+      h.textContent = "pick your starter!";
+      box.appendChild(h);
+      ["embercub", "aquafin", "leafhop"].forEach(function (id) {
+        var base = critterById(id);
+        var b = document.createElement("button");
+        b.className = "secondary";
+        b.style.display = "block"; b.style.margin = "8px 0";
+        b.textContent = base.name + " (" + base.type + ") — HP " + base.hp + ", ATK " + base.atk;
+        b.onclick = function () {
+          critterSave.team.push(critterNew(id));
+          critterStore();
+          critterRender();
+        };
+        box.appendChild(b);
+      });
+      return;
+    }
+    // main menu
+    var info = document.createElement("p");
+    info.textContent = "traps: " + critterSave.traps + " | team: " + critterSave.team.length + " | caught: " + critterSave.box.length;
+    box.appendChild(info);
+    var ex = document.createElement("button");
+    ex.textContent = "explore!";
+    ex.onclick = critterExplore;
+    box.appendChild(ex);
+    var teamH = document.createElement("h2");
+    teamH.textContent = "your team";
+    box.appendChild(teamH);
+    critterSave.team.forEach(function (c) {
+      var p = document.createElement("p");
+      p.textContent = c.name + " (" + c.type + ") Lv" + c.lvl + " — HP " + c.hp + "/" + c.maxHp;
+      box.appendChild(p);
+    });
+    if (critterSave.box.length) {
+      var boxH = document.createElement("h2");
+      boxH.textContent = "collection (" + critterSave.box.length + "/12)";
+      box.appendChild(boxH);
+      var seen = {};
+      critterSave.box.forEach(function (c) { seen[c.id] = true; });
+      var p2 = document.createElement("p");
+      p2.style.fontSize = "15px";
+      p2.textContent = Object.keys(seen).map(function (id) { return critterById(id).name; }).join(", ");
+      box.appendChild(p2);
+    }
+  }
+  function critterExplore() {
+    var r = Math.random();
+    if (r < 0.2) {
+      critterSave.traps += 2;
+      critterStore();
+      flashNotice("found 2 traps!");
+      critterRender();
+      return;
+    }
+    if (r < 0.3) {
+      flashNotice("nothing here... keep exploring!");
+      return;
+    }
+    // wild encounter!
+    var wild = critterNew(CRITTERS[Math.floor(Math.random() * CRITTERS.length)].id);
+    // scale wild to team strength
+    var avgLvl = 1;
+    critterSave.team.forEach(function (c) { avgLvl += c.lvl; });
+    avgLvl = Math.round(avgLvl / critterSave.team.length);
+    wild.lvl = Math.max(1, avgLvl + Math.floor(Math.random() * 3) - 1);
+    wild.maxHp = Math.round(wild.maxHp * (1 + (wild.lvl - 1) * 0.15));
+    wild.hp = wild.maxHp;
+    wild.atk = Math.round(wild.atk * (1 + (wild.lvl - 1) * 0.12));
+    critterBattle = { wild: wild, myIdx: 0, msg: "a wild " + wild.name + " appeared!" };
+    // heal team slightly? no - keep damage
+    critterRender();
+  }
+  function critterMyCritter() {
+    return critterSave.team[critterBattle.myIdx];
+  }
+  function critterRenderBattle(box) {
+    var b = critterBattle;
+    var wild = b.wild;
+    var mine = critterMyCritter();
+    var h = document.createElement("h2");
+    h.textContent = "wild " + wild.name + " (Lv" + wild.lvl + ")";
+    box.appendChild(h);
+    var wp = document.createElement("p");
+    wp.textContent = "HP: " + wild.hp + "/" + wild.maxHp + " (" + wild.type + ")";
+    box.appendChild(wp);
+    var wbar = document.createElement("div");
+    wbar.style.cssText = "width:200px;height:12px;border:1px solid #111;background:#eee;";
+    var wfill = document.createElement("div");
+    wfill.style.cssText = "height:100%;background:#cc0000;width:" + Math.round(wild.hp / wild.maxHp * 100) + "%;";
+    wbar.appendChild(wfill);
+    box.appendChild(wbar);
+    var mh = document.createElement("h2");
+    mh.textContent = mine.name + " (Lv" + mine.lvl + ")";
+    box.appendChild(mh);
+    var mp = document.createElement("p");
+    mp.textContent = "HP: " + mine.hp + "/" + mine.maxHp + " (" + mine.type + ")";
+    box.appendChild(mp);
+    var mbar = document.createElement("div");
+    mbar.style.cssText = "width:200px;height:12px;border:1px solid #111;background:#eee;";
+    var mfill = document.createElement("div");
+    mfill.style.cssText = "height:100%;background:#00aa00;width:" + Math.round(mine.hp / mine.maxHp * 100) + "%;";
+    mbar.appendChild(mfill);
+    box.appendChild(mbar);
+    var msg = document.createElement("p");
+    msg.style.fontSize = "16px";
+    msg.textContent = b.msg;
+    box.appendChild(msg);
+    var row = document.createElement("div");
+    var atk = document.createElement("button");
+    atk.textContent = "attack";
+    atk.onclick = critterAttack;
+    row.appendChild(atk);
+    var trap = document.createElement("button");
+    trap.className = "secondary";
+    trap.textContent = "trap (" + critterSave.traps + ")";
+    trap.onclick = critterTrap;
+    row.appendChild(trap);
+    var run = document.createElement("button");
+    run.className = "secondary";
+    run.textContent = "run";
+    run.onclick = critterRun;
+    row.appendChild(run);
+    box.appendChild(row);
+    // switch critter
+    if (critterSave.team.length > 1) {
+      var sw = document.createElement("div");
+      sw.style.marginTop = "8px";
+      critterSave.team.forEach(function (c, idx) {
+        if (idx === b.myIdx || c.hp <= 0) { return; }
+        var sb = document.createElement("button");
+        sb.className = "mini secondary";
+        sb.textContent = "send " + c.name;
+        sb.onclick = function () {
+          b.myIdx = idx;
+          b.msg = "go, " + c.name + "!";
+          critterRender();
+        };
+        sw.appendChild(sb);
+      });
+      box.appendChild(sw);
+    }
+  }
+  function critterEffectiveness(atkType, defType) {
+    return CRITTER_BEATS[atkType] === defType ? 1.5 : 1;
+  }
+  function critterAttack() {
+    var b = critterBattle;
+    var wild = b.wild, mine = critterMyCritter();
+    // player attacks
+    var eff = critterEffectiveness(mine.type, wild.type);
+    var dmg = Math.round((mine.atk + Math.random() * 5) * eff);
+    wild.hp = Math.max(0, wild.hp - dmg);
+    b.msg = mine.name + " dealt " + dmg + " damage!" + (eff > 1 ? " super effective!" : "");
+    if (wild.hp <= 0) {
+      // won!
+      var xpGain = 5 + wild.lvl * 2;
+      mine.lvl++;
+      mine.maxHp = Math.round(mine.maxHp * 1.1);
+      mine.hp = mine.maxHp;
+      mine.atk = Math.round(mine.atk * 1.08);
+      critterStore();
+      b.msg = "wild " + wild.name + " fainted! " + mine.name + " grew to Lv" + mine.lvl + "! +" + xpGain + " xp";
+      xpWinOnce();
+      // heal a bit
+      setTimeout(function () { critterBattle = null; critterRender(); }, 1500);
+      critterRender();
+      return;
+    }
+    // wild attacks back
+    var weff = critterEffectiveness(wild.type, mine.type);
+    var wdam = Math.round((wild.atk + Math.random() * 5) * weff);
+    mine.hp = Math.max(0, mine.hp - wdam);
+    b.msg += " wild " + wild.name + " dealt " + wdam + " back!" + (weff > 1 ? " super effective!" : "");
+    if (mine.hp <= 0) {
+      // find next alive
+      var next = -1;
+      for (var i = 0; i < critterSave.team.length; i++) {
+        if (critterSave.team[i].hp > 0) { next = i; break; }
+      }
+      if (next === -1) {
+        b.msg = "all your critters fainted... you run home!";
+        critterStore();
+        setTimeout(function () {
+          // revive with half hp
+          critterSave.team.forEach(function (c) { c.hp = Math.round(c.maxHp / 2); });
+          critterStore();
+          critterBattle = null;
+          critterRender();
+        }, 1500);
+      } else {
+        b.myIdx = next;
+        b.msg += " " + mine.name + " fainted! go, " + critterSave.team[next].name + "!";
+      }
+    }
+    critterStore();
+    critterRender();
+  }
+  function critterTrap() {
+    var b = critterBattle;
+    if (critterSave.traps <= 0) { b.msg = "no traps left!"; critterRender(); return; }
+    critterSave.traps--;
+    var wild = b.wild;
+    var base = critterById(wild.id).catch;
+    var hpFactor = 1 - (wild.hp / wild.maxHp) * 0.6; // lower hp = easier
+    var chance = base * hpFactor;
+    if (Math.random() < chance) {
+      // caught!
+      var newC = critterNew(wild.id);
+      newC.lvl = wild.lvl;
+      critterSave.box.push(newC);
+      if (critterSave.team.length < 6) {
+        critterSave.team.push(newC);
+        b.msg = "caught " + wild.name + "! added to your team!";
+      } else {
+        b.msg = "caught " + wild.name + "! sent to collection!";
+      }
+      critterStore();
+      xpWinOnce();
+      setTimeout(function () { critterBattle = null; critterRender(); }, 1500);
+    } else {
+      b.msg = "oh no! " + wild.name + " broke free!";
+      // wild attacks
+      var mine = critterMyCritter();
+      var wdam = Math.round(wild.atk + Math.random() * 5);
+      mine.hp = Math.max(0, mine.hp - wdam);
+      b.msg += " it dealt " + wdam + " damage!";
+      if (mine.hp <= 0) {
+        b.msg += " " + mine.name + " fainted!";
+      }
+    }
+    critterStore();
+    critterRender();
+  }
+  function critterRun() {
+    var b = critterBattle;
+    if (Math.random() < 0.6) {
+      b.msg = "got away safely!";
+      setTimeout(function () { critterBattle = null; critterRender(); }, 800);
+    } else {
+      b.msg = "can't escape!";
+      var mine = critterMyCritter();
+      var wdam = Math.round(b.wild.atk + Math.random() * 5);
+      mine.hp = Math.max(0, mine.hp - wdam);
+      b.msg += " wild " + b.wild.name + " dealt " + wdam + "!";
+    }
+    critterStore();
+    critterRender();
+  }
+  document.getElementById("critter-back-btn").onclick = enterGames;
+
+  /* ---------- polls ---------- */
+  var pollRef = null;
+  function enterPolls() {
+    showScreen("poll-screen");
+    document.getElementById("poll-msg").textContent = "";
+    // show create form for founder only
+    var isFounder = myUid() && (myUid() === founderUid || (typeof isMod !== "undefined" && isMod));
+    // actually only chickn (founder) can post polls
+    db.ref("users/" + myUid() + "/name").once("value", function (snap) {
+      var nm = snap.val();
+      document.getElementById("poll-create").className = (nm === "chickn") ? "" : "hidden";
+    });
+    if (pollRef) { pollRef.off(); }
+    pollRef = db.ref("polls").orderByChild("createdAt");
+    pollRef.on("value", function (snap) { renderPolls(snap.val()); });
+    // mark seen
+    try {
+      db.ref("pollsMeta/lastPollAt").once("value", function (s) {
+        var at = s.val() || 0;
+        try { localStorage.setItem("readium_lastPollSeen", String(at)); } catch (e) {}
+        updatePollDot();
+      });
+    } catch (e) {}
+  }
+  function updatePollDot() {
+    var dot = document.getElementById("poll-dot");
+    if (!dot) { return; }
+    var seen = 0, last = 0;
+    try { seen = parseInt(localStorage.getItem("readium_lastPollSeen") || "0", 10); } catch (e) {}
+    db.ref("pollsMeta/lastPollAt").once("value", function (snap) {
+      last = snap.val() || 0;
+      dot.className = (last > seen) ? "dot" : "dot hidden";
+    });
+  }
+  function renderPolls(data) {
+    var box = document.getElementById("poll-list");
+    box.innerHTML = "";
+    var keys = data ? Object.keys(data) : [];
+    keys.sort(function (a, b) { return (data[b].createdAt || 0) - (data[a].createdAt || 0); });
+    if (!keys.length) { box.innerHTML = "<p>no polls yet.</p>"; return; }
+    var me = myUid();
+    keys.forEach(function (pid) {
+      (function (p) {
+        var wrap = document.createElement("div");
+        wrap.className = "req-row";
+        var q = document.createElement("p");
+        var qb = document.createElement("b");
+        qb.textContent = p.question || "(no question)";
+        q.appendChild(qb);
+        wrap.appendChild(q);
+        var opts = p.options || [];
+        var votes = p.votes || {};
+        var total = 0;
+        for (var i = 0; i < opts.length; i++) { total += (votes[i] || 0); }
+        // check if I voted
+        db.ref("pollVotes/" + pid + "/" + me).once("value", function (vsnap) {
+          var myVote = vsnap.val();
+          for (var i = 0; i < opts.length; i++) {
+            (function (idx) {
+              var row = document.createElement("div");
+              row.style.cssText = "margin:6px 0;";
+              var btn = document.createElement("button");
+              btn.className = "mini secondary";
+              btn.style.width = "100%";
+              btn.style.textAlign = "left";
+              var vc = votes[idx] || 0;
+              var pct = total ? Math.round(vc / total * 100) : 0;
+              btn.textContent = opts[idx] + " — " + vc + " (" + pct + "%)";
+              if (myVote !== null && myVote !== undefined) {
+                btn.disabled = true;
+                if (myVote === idx) { btn.textContent = "\u2713 " + btn.textContent; }
+              } else {
+                btn.onclick = function () {
+                  db.ref("pollVotes/" + pid + "/" + me).set(idx, function (err) {
+                    if (!err) {
+                      db.ref("polls/" + pid + "/votes/" + idx).transaction(function (cur) {
+                        return (typeof cur === "number" ? cur : 0) + 1;
+                      });
+                    }
+                  });
+                };
+              }
+              row.appendChild(btn);
+              wrap.appendChild(row);
+            })(i);
+          }
+          var meta = document.createElement("p");
+          meta.style.fontSize = "14px"; meta.style.color = "#555555";
+          meta.textContent = total + " vote" + (total === 1 ? "" : "s");
+          wrap.appendChild(meta);
+        });
+        box.appendChild(wrap);
+      })(data[pid]);
+    });
+  }
+  document.getElementById("home-apps-btn").onclick = function () { showScreen("apps-screen"); };
+  document.getElementById("apps-back-btn").onclick = goHome;
+  document.getElementById("apps-suggest-btn").onclick = function () { requireAuth(enterSuggest); };
+  document.getElementById("apps-store-btn").onclick = function () { requireAuth(enterStore); };
+  document.getElementById("apps-board-btn").onclick = enterBoard;
+  document.getElementById("apps-poll-btn").onclick = function () { enterPolls(); };
+  document.getElementById("apps-log-btn").onclick = function () { showScreen("log-screen"); };
+  document.getElementById("apps-settings-btn").onclick = function () { settingsReturn = "home"; requireAuth(enterSettings); };
+  document.getElementById("apps-fullscreen-btn").onclick = function () { document.getElementById("fullscreen-btn").onclick(); };
+  document.getElementById("poll-back-btn").onclick = goHome;
+  document.getElementById("poll-post-btn").onclick = function () {
+    var q = document.getElementById("poll-q").value.replace(/^\s+|\s+$/g, "");
+    var opts = [];
+    for (var i = 1; i <= 4; i++) {
+      var v = document.getElementById("poll-opt" + i).value.replace(/^\s+|\s+$/g, "");
+      if (v) { opts.push(v); }
+    }
+    var msg = document.getElementById("poll-msg");
+    if (!q || opts.length < 2) { msg.textContent = "need a question and at least 2 options."; return; }
+    var ref = db.ref("polls").push();
+    ref.set({ question: q, options: opts, votes: {}, createdBy: myUid(), createdAt: Date.now() }, function (err) {
+      if (err) { msg.textContent = "could not post poll."; return; }
+      db.ref("pollsMeta/lastPollAt").set(Date.now());
+      document.getElementById("poll-q").value = "";
+      for (var j = 1; j <= 4; j++) { document.getElementById("poll-opt" + j).value = ""; }
+      msg.textContent = "poll posted! everyone will see a notification.";
+    });
+  };
+
+  /* ---------- suggestions ---------- */
   function enterSuggest() {
     wantSuggest = false;
     showScreen("suggest-screen");
@@ -6721,15 +7622,16 @@ function flairName(name, rec) {
     box.innerHTML = "";
     var data = suggestData || {};
     var keys = Object.keys(data);
-    var open = [], done = [];
+    var open = [], done = [], rejected = [];
     for (var i = 0; i < keys.length; i++) {
       var s = data[keys[i]] || {};
       s._id = keys[i];
-      if (s.done) { done.push(s); } else { open.push(s); }
+      if (s.rejected) { rejected.push(s); } else if (s.done) { done.push(s); } else { open.push(s); }
     }
     open.sort(function (a, b) { return suggestScore(b) - suggestScore(a) || (b.ts || 0) - (a.ts || 0); });
     done.sort(function (a, b) { return (b.doneAt || 0) - (a.doneAt || 0); });
-    var list = suggestTab === "open" ? open : done;
+    rejected.sort(function (a, b) { return (b.doneAt || 0) - (a.doneAt || 0); });
+    var list = suggestTab === "open" ? open : (suggestTab === "rejected" ? rejected : done);
     if (!list.length) { box.innerHTML = "<p>nothing here yet</p>"; return; }
     for (var j = 0; j < list.length; j++) { renderSuggestItem(list[j], box); }
   }
@@ -6742,6 +7644,7 @@ function flairName(name, rec) {
     tag.textContent = s.type === "bug" ? "[bug] " : "[idea] ";
     var body = document.createElement("span");
     body.textContent = s.text || "";
+    if (s.done) { body.className = "sug-done-text"; }
     head.appendChild(tag);
     head.appendChild(body);
     wrap.appendChild(head);
@@ -6758,8 +7661,7 @@ function flairName(name, rec) {
     restx.textContent = " \u2014 " + sc + " point" + (sc === 1 || sc === -1 ? "" : "s");
     meta.appendChild(byx); meta.appendChild(nmx);
     if (ptx) { meta.appendChild(ptx); }
-    var sttag = teamTagForUid(s.uid);
-    if (sttag) { meta.appendChild(sttag); }
+
     meta.appendChild(restx);
     wrap.appendChild(meta);
     var row = document.createElement("div");
@@ -6814,15 +7716,24 @@ function flairName(name, rec) {
         dn.className = "mini secondary";
         dn.textContent = "mark done";
         dn.onclick = function () {
-          db.ref("suggestions/" + id).update({ done: true, doneAt: Date.now() });
+          db.ref("suggestions/" + id).update({ done: true, rejected: false, doneAt: Date.now() });
         };
         row.appendChild(dn);
+        var rj = document.createElement("button");
+        rj.className = "mini secondary";
+        rj.textContent = "reject";
+        rj.onclick = function () {
+          askConfirm("Reject this suggestion?", function () {
+            db.ref("suggestions/" + id).update({ rejected: true, done: false, doneAt: Date.now() });
+          });
+        };
+        row.appendChild(rj);
       } else {
         var ro = document.createElement("button");
         ro.className = "mini secondary";
         ro.textContent = "reopen";
         ro.onclick = function () {
-          db.ref("suggestions/" + id).update({ done: false, doneAt: null });
+          db.ref("suggestions/" + id).update({ done: false, rejected: false, doneAt: null });
         };
         row.appendChild(ro);
       }
@@ -6861,13 +7772,18 @@ function flairName(name, rec) {
         var c = data[k] || {};
         var d = document.createElement("div");
         d.style.cssText = "font-size:17px;border-top:1px solid #999999;padding:6px 0;";
+        if (c.uid) {
+          var spi = pfpImg(null, 1);
+          spi.style.verticalAlign = "middle"; spi.style.marginRight = "6px";
+          fillPfpImg(spi, c.uid);
+          d.appendChild(spi);
+        }
         var nm = document.createElement("b");
         nm.textContent = (c.name || "?") + ": ";
         var tx = document.createElement("span");
         tx.textContent = c.text || "";
         d.appendChild(nm);
-        var scttag = teamTagForUid(c.uid);
-        if (scttag) { d.appendChild(scttag); }
+
         d.appendChild(tx);
         if (auth.currentUser && (isMod || c.uid === myUid())) {
           var del = document.createElement("button");
@@ -6933,7 +7849,6 @@ function flairName(name, rec) {
   }
   document.getElementById("suggest-post-btn").onclick = suggestPost;
   document.getElementById("suggest-home-btn").onclick = goHome;
-  document.getElementById("home-store-btn").onclick = enterStore;
   /* ================= OCTOBER EVENT ================= */
   var EVENT_END = new Date(2026, 10, 8, 0, 0, 0).getTime(); /* midnight ending Nov 7 */
   var EVENT_DOOR_WINDOW = 2 * 3600 * 1000; /* 2 hours */
@@ -7269,11 +8184,19 @@ function flairName(name, rec) {
               var nm = document.createElement("span");
               var urec = users[r.uid];
               nm.textContent = (urec && urec.name) || "???";
+              if (nm.textContent === "???" && r.uid) {
+                (function (nmEl, uid) {
+                  db.ref("users/" + uid + "/name").once("value", function (nsnap) {
+                    var n = nsnap.val();
+                    if (n) { nmEl.textContent = n; if (typeof styleModName === "function") { styleModName(nmEl, uid, n); } }
+                  });
+                })(nm, r.uid);
+              }
               if (typeof styleModName === "function") { styleModName(nm, r.uid, nm.textContent); }
               var c = document.createElement("span");
               c.className = "board-xp"; c.textContent = r.candy + " candy";
               row.appendChild(rk); row.appendChild(nm);
-              var cttag = teamTagForUid(r.uid);
+
               if (cttag) { row.appendChild(cttag); }
               row.appendChild(c);
               list.appendChild(row);
@@ -7287,7 +8210,6 @@ function flairName(name, rec) {
   document.getElementById("event-btn").onclick = function () { enterEvent(); };
   /* ============== END OCTOBER EVENT ============== */
 
-  document.getElementById("home-board-btn").onclick = enterBoard;
   document.getElementById("board-home-btn").onclick = goHome;
   document.getElementById("store-home-btn").onclick = goHome;
   document.getElementById("suggest-top-home-btn").onclick = goHome;
@@ -7331,6 +8253,9 @@ function flairName(name, rec) {
       ensureUserRecord();
       watchXp();
       watchDmRequests();
+      syncTimezoneFromCloud();
+      updatePollDot();
+      checkBanMessage();
       watchMentions();
       checkMod();
       startPresence();
