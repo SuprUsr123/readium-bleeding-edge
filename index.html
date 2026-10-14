@@ -414,7 +414,8 @@
   <button id="games-btn" class="secondary">games</button>
   <button id="hood-btn" class="secondary">neighborhood</button>
   <button id="home-apps-btn" class="secondary">see all apps</button>
-  <button id="dash-btn" class="secondary hidden">mod dashboard</button>
+  <button id="dash-btn" class="secondary">mod dashboard</button>
+  <div id="pinned-apps"></div>
 </div>
 
 <!-- ALL APPS -->
@@ -716,6 +717,11 @@
   <div id="set-body-online" class="hidden section-body">
     <p style="font-size:16px">Show who's online right now in a side panel. It remembers your choice on this device.</p>
     <button id="set-online-toggle" class="secondary">online list: off</button>
+  </div>
+  <button id="set-sec-pins" class="secondary section-head">pin apps +</button>
+  <div id="set-body-pins" class="hidden section-body">
+    <p style="font-size:16px">Pin apps to your home page for quick access.</p>
+    <div id="pin-list"></div>
   </div>
   <button id="settings-back-btn" class="secondary">back</button>
 </div>
@@ -1307,9 +1313,11 @@
     }
     updateDashBtn();
     updateOnlinePanel();
+    renderPinnedHome();
   }
   function updateDashBtn() {
-    document.getElementById("dash-btn").className = isMod ? "secondary" : "secondary hidden";
+    // always show on homepage; the dash screen itself checks mod permission
+    document.getElementById("dash-btn").className = "secondary";
   }
   var currentPfp = null;
   var currentFlair = null;
@@ -1583,6 +1591,7 @@
   };
   document.getElementById("dash-btn").onclick = function () {
     if (isMod) { enterDash(); }
+    else { flashNotice("mods only!"); }
   };
 
   /* ---------- navigation ---------- */
@@ -1613,6 +1622,82 @@
   document.getElementById("set-sec-clock").onclick = function () { setSectionToggle("clock", "clock"); };
   document.getElementById("set-sec-pw").onclick = function () { setSectionToggle("pw", "password"); };
   document.getElementById("set-sec-online").onclick = function () { setSectionToggle("online", "online list"); };
+  document.getElementById("set-sec-pins").onclick = function () { setSectionToggle("pins", "pin apps"); renderPinList(); };
+
+  /* ---------- pin apps to home ---------- */
+  var PINNABLE_APPS = [
+    { id: "suggest", label: "suggestions", fn: "enterSuggest" },
+    { id: "store", label: "store", fn: "enterStore" },
+    { id: "board", label: "leaderboard", fn: "enterBoard" },
+    { id: "poll", label: "polls", fn: "enterPolls" },
+    { id: "log", label: "changelog", fn: "showLog" }
+  ];
+  function getPinnedApps() {
+    try {
+      var s = localStorage.getItem("readium_pinnedApps");
+      return s ? JSON.parse(s) : [];
+    } catch (e) { return []; }
+  }
+  function setPinnedApps(arr) {
+    try { localStorage.setItem("readium_pinnedApps", JSON.stringify(arr)); } catch (e) {}
+    renderPinnedHome();
+  }
+  function isPinned(appId) {
+    return getPinnedApps().indexOf(appId) !== -1;
+  }
+  function togglePin(appId) {
+    var pins = getPinnedApps();
+    var i = pins.indexOf(appId);
+    if (i === -1) { pins.push(appId); }
+    else { pins.splice(i, 1); }
+    setPinnedApps(pins);
+    renderPinList();
+  }
+  function renderPinList() {
+    var box = document.getElementById("pin-list");
+    if (!box) { return; }
+    box.innerHTML = "";
+    var pins = getPinnedApps();
+    PINNABLE_APPS.forEach(function (app) {
+      var row = document.createElement("div");
+      row.style.cssText = "margin:8px 0;";
+      var btn = document.createElement("button");
+      btn.className = "secondary";
+      btn.style.width = "100%";
+      btn.textContent = (pins.indexOf(app.id) !== -1 ? "[x] " : "[ ] ") + app.label;
+      (function (aid) {
+        btn.onclick = function () { togglePin(aid); };
+      })(app.id);
+      row.appendChild(btn);
+      box.appendChild(row);
+    });
+  }
+  function renderPinnedHome() {
+    var box = document.getElementById("pinned-apps");
+    if (!box) { return; }
+    box.innerHTML = "";
+    var pins = getPinnedApps();
+    pins.forEach(function (aid) {
+      var app = null;
+      for (var i = 0; i < PINNABLE_APPS.length; i++) {
+        if (PINNABLE_APPS[i].id === aid) { app = PINNABLE_APPS[i]; break; }
+      }
+      if (!app) { return; }
+      var btn = document.createElement("button");
+      btn.className = "secondary";
+      btn.textContent = app.label;
+      (function (fn) {
+        btn.onclick = function () {
+          if (fn === "enterSuggest") { enterSuggest(); }
+          else if (fn === "enterStore") { enterStore(); }
+          else if (fn === "enterBoard") { enterBoard(); }
+          else if (fn === "enterPolls") { enterPolls(); }
+          else if (fn === "showLog") { showScreen("log-screen"); }
+        };
+      })(app.fn);
+      box.appendChild(btn);
+    });
+  }
   document.getElementById("settings-back-btn").onclick = function () {
     if (settingsReturn === "home") { goHome(); }
     else { enterProfile(); }
