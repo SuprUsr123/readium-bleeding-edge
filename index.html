@@ -103,6 +103,15 @@
     font-size: 20px;
     margin-bottom: 26px;
   }
+  #apps-screen button {
+    display: inline-block;
+    vertical-align: top;
+    width: 46%;
+    margin: 2%;
+    min-height: 80px;
+    font-size: 20px;
+  }
+  #apps-screen h1 { width: 100%; }
   .tile {
     display: inline-block;
     vertical-align: top;
@@ -4459,6 +4468,8 @@
 /* ---------- chess ---------- */
 // ---- chess engine (pure logic, testable) ----
 function chessOpp(c){ return c==="w" ? "b" : "w"; }
+function chessSer(st){ try { return JSON.stringify(st); } catch (e) { return ""; } }
+function chessDeser(s){ try { return JSON.parse(s); } catch (e) { return chessNew(); } }
 function chessNew(){
   var back=["r","n","b","q","k","b","n","r"];
   var b=[];
@@ -7615,7 +7626,7 @@ function flairName(name, rec) {
     } catch (e) {}
   }
   function updatePollDot() {
-    var dot = document.getElementById("poll-dot");
+    var dot = document.getElementById("poll-dot2");
     if (!dot) { return; }
     var seen = 0, last = 0;
     try { seen = parseInt(localStorage.getItem("readium_lastPollSeen") || "0", 10); } catch (e) {}
@@ -7693,7 +7704,7 @@ function flairName(name, rec) {
   document.getElementById("apps-poll-btn").onclick = function () { enterPolls(); };
   document.getElementById("apps-log-btn").onclick = function () { showScreen("log-screen"); };
   document.getElementById("apps-settings-btn").onclick = function () { settingsReturn = "home"; requireAuth(enterSettings); };
-  document.getElementById("apps-fullscreen-btn").onclick = function () { document.getElementById("fullscreen-btn").onclick(); };
+
   document.getElementById("poll-back-btn").onclick = goHome;
   document.getElementById("poll-post-btn").onclick = function () {
     var q = document.getElementById("poll-q").value.replace(/^\s+|\s+$/g, "");
@@ -8336,7 +8347,7 @@ function flairName(name, rec) {
   document.getElementById("store-home-btn").onclick = goHome;
   document.getElementById("suggest-top-home-btn").onclick = goHome;
   document.getElementById("hood-top-home-btn").onclick = goHome;
-  document.getElementById("fullscreen-btn").onclick = function () {
+  document.getElementById("apps-fullscreen-btn").onclick = function () {
     try {
       if (document.fullscreenElement) { document.exitFullscreen(); }
       else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
