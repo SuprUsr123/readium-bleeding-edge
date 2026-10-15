@@ -2823,7 +2823,7 @@
       var lk = String(displayName()).toLowerCase();
       if (usersByName[lk]) { usersByName[lk].rec.pfp = editPfpStr; }
     } catch (e2) {}
-    db.ref("users/" + u.uid).update({ pfp: editPfpStr }, function () { enterProfile(); });
+    db.ref("users/" + u.uid).update({ pfp: editPfpStr }, function () { refreshHome(); enterProfile(); });
   };
   document.getElementById("pfp-back-btn").onclick = enterProfile;
 
