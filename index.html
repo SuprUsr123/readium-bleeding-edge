@@ -2171,9 +2171,9 @@
             if (err2) { showDmError("Request sent but tracking failed."); return; }
             showDmOk("Request sent to " + name + "! They'll see a dot on their DMs.");
           });
-        }, function (err) { showDmError("Could not check existing requests."); });
-      }, function (err) { showDmError("Could not check existing DMs."); });
-    }, function (err) { showDmError("Connection error. Try again."); });
+        }, function (err) { showDmError("Could not check existing requests: " + (err && err.code ? err.code : err)); });
+      }, function (err) { showDmError("Could not check existing DMs: " + (err && err.code ? err.code : err)); });
+    }, function (err) { showDmError("Connection error: " + (err && err.code ? err.code : err)); });
   }
 
   function acceptDm(fromUid, fromName) {
