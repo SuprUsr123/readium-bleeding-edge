@@ -2155,25 +2155,21 @@
   function startDmWith(toUid, name) {
     var me = myUid();
     if (!me) { showDmError("You need to be logged in."); return; }
+    if (me === toUid) { showDmError("That's you!"); return; }
     showDmOk("Sending request to " + name + "...");
-    db.ref("userDms/" + me + "/" + toUid).once("value", function (snap) {
-      if (snap.exists()) {
-        var c = snap.val();
-        openDm(c.dmId, c.name || name);
+    var reqData = { fromUid: me, fromName: displayName(), at: Date.now() };
+    db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
+      if (err) {
+        var code = err && err.code ? err.code : "";
+        if (code === "PERMISSION_DENIED") { showDmOk("Request already sent — waiting for them."); }
+        else { showDmError("Could not send request: " + (err.message || err)); }
         return;
       }
-      db.ref("dmRequests/" + toUid + "/" + me).once("value", function (s2) {
-        if (s2.exists()) { showDmOk("Request already sent — waiting for them."); return; }
-        var reqData = { fromUid: me, fromName: displayName(), at: Date.now() };
-        db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
-          if (err) { showDmError("Could not send request: " + (err.message || err)); return; }
-          db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function (err2) {
-            if (err2) { showDmError("Request sent but tracking failed."); return; }
-            showDmOk("Request sent to " + name + "! They'll see a dot on their DMs.");
-          });
-        }, function (err) { showDmError("Could not check existing requests: " + (err && err.code ? err.code : err)); });
-      }, function (err) { showDmError("Could not check existing DMs: " + (err && err.code ? err.code : err)); });
-    }, function (err) { showDmError("Connection error: " + (err && err.code ? err.code : err)); });
+      db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function (err2) {
+        if (err2) { showDmError("Request sent but tracking failed."); return; }
+        showDmOk("Request sent to " + name + "! They'll see a dot on their DMs.");
+      });
+    });
   }
 
   function acceptDm(fromUid, fromName) {
