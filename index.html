@@ -1118,7 +1118,28 @@
   /* ---------- pixel pfps (canvas -> PNG, works everywhere) ---------- */
   var PALETTE = ["#ffffff", "#bbbbbb", "#666666", "#111111"];
   var pfpCache = {};
-  function blankPfp() { var s = ""; for (var i = 0; i < 256; i++) { s += "0"; } return s; }
+  function blankPfp() {
+    // default face: gray bg (1), dark eyes and smile (3)
+    var rows = [
+      "1111111111111111",
+      "1111111111111111",
+      "1131111111111311",
+      "1131111111111311",
+      "1111111111111111",
+      "1111111111111111",
+      "1111111111111111",
+      "1111133333331111",
+      "1111311111113111",
+      "1111111111111111",
+      "1111111111111111",
+      "1111111111111111",
+      "1111111111111111",
+      "1111111111111111",
+      "1111111111111111",
+      "1111111111111111"
+    ];
+    return rows.join("");
+  }
   function pfpURL(pfpStr) {
     if (pfpCache[pfpStr]) { return pfpCache[pfpStr]; }
     var url = "";
@@ -1455,7 +1476,14 @@
         currentPfp = v.pfp || blankPfp();
         currentFlair = v.flair || null;
         currentTitle = v.title || null;
-        myPet = v.pet || null;
+        myPet = null;
+        // pets removed from store 2026-10-15: clear any owned pet data
+        if (v.pet) { db.ref("users/" + u.uid + "/pet").remove(); }
+        db.ref("store/" + u.uid).once("value", function (ss) {
+          ss.forEach(function (ch) {
+            if (ch.key.indexOf("pet_") === 0) { db.ref("store/" + u.uid + "/" + ch.key).remove(); }
+          });
+        });
         myTheme = v.theme || null;
         myBoostUntil = v.xpBoostUntil || 0;
       }
@@ -3990,23 +4018,19 @@
   }
   function solTap(pk, pi, ci) {
     if (solSel && solSel.pk === pk && solSel.pi === pi && solSel.ci === ci) { solSel = null; solRender(); return; }
-    // destination taps
-    if (solSel && (pk === "f" || (pk === "t" && ci < 0) || (pk === "t" && solSel.pk !== "t"))) {
+    // if something is selected, try this tap as a move destination
+    if (solSel && (pk === "f" || pk === "t")) {
       var cards = solMovingCards();
       var ok = false;
       if (pk === "f" && cards.length === 1 && solCanFound(cards[0], pi)) {
         solRemoveSel(); solFound[pi].push(cards[0]); ok = true;
-      } else if (pk === "t" && solCanTab(cards, pi)) {
-        // can't drop back onto same pile
-        if (!(solSel.pk === "t" && solSel.pi === pi)) {
-          solRemoveSel();
-          for (var i = 0; i < cards.length; i++) { solTab[pi].push(cards[i]); }
-          ok = true;
-        }
+      } else if (pk === "t" && !(solSel.pk === "t" && solSel.pi === pi) && solCanTab(cards, pi)) {
+        solRemoveSel();
+        for (var i = 0; i < cards.length; i++) { solTab[pi].push(cards[i]); }
+        ok = true;
       }
-      solSel = null;
-      if (ok) { solAfterMove(); } else { solRender(); }
-      return;
+      if (ok) { solSel = null; solAfterMove(); return; }
+      // move failed: fall through and select the tapped card instead
     }
     // selection taps
     if (pk === "w" && solWaste.length) { solSel = { pk: "w", pi: 0, ci: solWaste.length - 1 }; }
@@ -5403,11 +5427,6 @@ function tipXp(toUid, amount) {
   flashNotice("tipped " + amount + " xp!");
 }
 var storeItems = [
-  { id: "pet_cat", kind: "pet", petKey: "cat", name: "cat pet", desc: "a tiny cat by your name in chat", cost: 80 },
-  { id: "pet_dog", kind: "pet", petKey: "dog", name: "dog pet", desc: "a tiny dog by your name in chat", cost: 80 },
-  { id: "pet_frog", kind: "pet", petKey: "frog", name: "frog pet", desc: "a tiny frog by your name in chat", cost: 80 },
-  { id: "pet_penguin", kind: "pet", petKey: "penguin", name: "penguin pet", desc: "a tiny penguin by your name in chat", cost: 80 },
-  { id: "pet_dragon", kind: "pet", petKey: "dragon", name: "dragon pet", desc: "a rare tiny dragon by your name in chat", cost: 150 },
   { id: "theme_dots", kind: "theme", themeKey: "dots", name: "dots theme", desc: "dotted background for your profile", cost: 60 },
   { id: "theme_stripes", kind: "theme", themeKey: "stripes", name: "stripes theme", desc: "striped background for your profile", cost: 60 },
   { id: "theme_grid", kind: "theme", themeKey: "grid", name: "grid theme", desc: "grid background for your profile", cost: 60 },
