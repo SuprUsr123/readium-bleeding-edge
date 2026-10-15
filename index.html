@@ -824,6 +824,8 @@
   <p id="alc-msg"></p>
   <h2>elements</h2>
   <div id="alc-lib"></div>
+  <h2>leaderboard</h2>
+  <div id="alc-board"><p>loading...</p></div>
   <button id="alc-home-btn" class="secondary">games</button>
 </div>
 
@@ -7614,6 +7616,30 @@ function flairName(name, rec) {
     document.getElementById("alc-msg").textContent = "";
     showScreen("alc-screen");
     alcRender();
+    alcLoadBoard();
+  }
+  function alcLoadBoard() {
+    var box = document.getElementById("alc-board");
+    box.innerHTML = "<p>loading...</p>";
+    db.ref("alcScores").once("value", function (snap) {
+      var v = snap.val() || {};
+      var rows = [];
+      for (var uid in v) {
+        var r = v[uid] || {};
+        if (r.count > 0) { rows.push({ uid: uid, name: r.name || "someone", count: r.count }); }
+      }
+      rows.sort(function (a, b) { return b.count - a.count; });
+      rows = rows.slice(0, 20);
+      box.innerHTML = "";
+      if (!rows.length) { box.innerHTML = "<p>nobody yet — be the first!</p>"; return; }
+      var me = myUid();
+      for (var i = 0; i < rows.length; i++) {
+        var p = document.createElement("p");
+        p.textContent = (i + 1) + ". " + rows[i].name + " — " + rows[i].count;
+        if (rows[i].uid === me) { p.style.fontWeight = "bold"; }
+        box.appendChild(p);
+      }
+    }, function (err) { box.innerHTML = "<p>could not load.</p>"; });
   }
   function alcRender() {
     var lib = document.getElementById("alc-lib");
@@ -7658,6 +7684,10 @@ function flairName(name, rec) {
     var isNew = !alcDiscovered[r];
     alcDiscovered[r] = 1;
     alcSave();
+    if (isNew && myUid()) {
+      var cnt = Object.keys(alcDiscovered).length;
+      db.ref("alcScores/" + myUid()).set({ name: displayName(), count: cnt, at: Date.now() });
+    }
     msg.textContent = alcSel[0] + " + " + alcSel[1] + " = " + alcEmoji(r) + " " + r + (isNew ? " (new! +2 xp)" : "");
     if (isNew && typeof changeXp === "function" && myUid()) { changeXp(myUid(), 2); }
     alcSel = [];
