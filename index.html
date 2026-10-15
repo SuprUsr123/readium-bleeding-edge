@@ -3325,7 +3325,10 @@
       if (replyTarget) {
         msg.replyTo = { name: replyTarget.name, text: String(replyTarget.text).substring(0, 120) };
       }
-      messagesRef.push(msg, function () { grantXp(1, "msg", 60000); });
+      messagesRef.push(msg, function (err) {
+        if (err) { alert("Send failed: " + (err.code || err.message || err)); }
+        else { grantXp(1, "msg", 60000); }
+      });
       clearTyping();
       sendMentions(text);
       input.value = "";
