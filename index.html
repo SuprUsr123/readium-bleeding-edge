@@ -121,6 +121,28 @@
   }
   #alc-mix button.sel { background: #ffffff; color: #111111; }
   body.dark #alc-mix button.sel { background: #111111; color: #ffffff; }
+  #notif-wrap {
+    position: fixed;
+    top: 60px;
+    right: 10px;
+    z-index: 9999;
+    max-width: 300px;
+  }
+  .notif {
+    background: #111111;
+    color: #ffffff;
+    border: 3px solid #111111;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  body.dark .notif { background: #ffffff; color: #111111; border-color: #ffffff; }
+  .notif-title { font-weight: bold; margin-bottom: 4px; }
+  #gametitle-screen .setting-row { margin: 12px 0; }
+  #gametitle-screen .setting-row button { width: auto; margin: 4px; padding: 8px 16px; }
+  #gametitle-screen .setting-row button.sel { background: #ffffff; color: #111111; }
+  body.dark #gametitle-screen .setting-row button.sel { background: #111111; color: #ffffff; }
   .tile {
     display: inline-block;
     vertical-align: top;
@@ -415,6 +437,7 @@
 </style>
 </head>
 <body>
+<div id="notif-wrap"></div>
 
 <!-- HOME -->
 <div id="home-screen">
@@ -781,6 +804,15 @@
   <button id="games-home-btn" class="secondary">home</button>
 </div>
 
+<!-- GAME TITLE SCREEN -->
+<div id="gametitle-screen" class="hidden">
+  <h1 id="gt-title"></h1>
+  <p id="gt-desc"></p>
+  <div id="gt-settings"></div>
+  <button id="gt-start-btn">start!</button>
+  <button id="gt-back-btn" class="secondary">games</button>
+</div>
+
 <!-- ALCHEMY -->
 <div id="alc-screen" class="hidden">
   <h1>alchemy</h1>
@@ -816,6 +848,18 @@
 <div id="log-screen" class="hidden">
   <h1>changelog</h1>
   <div id="log-entries">
+    <h2>oct 15, 2026</h2>
+    <p><b>alchemy</b> — new crafting game! mix elements to discover 60+ items.</p>
+    <p><b>game title screens</b> — every game now has a title screen with description, settings, and start button.</p>
+    <p><b>popup notifications</b> — toast popups for important events.</p>
+    <p><b>solitaire fixed</b> — can now stack tableau cards by tapping them.</p>
+    <p><b>blank pfps fixed</b> — now show a default face instead of invisible.</p>
+    <p><b>pets removed</b> — all pets removed from store, bought pets cleaned up.</p>
+    <p><b>DM requests</b> — better error messages when sending requests.</p>
+    <p><b>bug check</b> — fixed fullscreen crash, poll dot, chess save/load, clock, logout button, dashboard feedback.</p>
+    <p><b>apps grid</b> — all-apps screen now shows apps in a 2-column grid.</p>
+    <h2>oct 14, 2026</h2>
+    <p><b>22-item update</b> — dark mode, polls app, critter catch, store redesign, solitaire, and more!</p>
     <h2>oct 13, 2026</h2>
     <p><b>Zaya's game of life</b> — new sandbox game! tap cells, press play, try the pulsar stamp.</p>
     <p><b>DMs fixed</b> — accepting a DM request works for everyone now.</p>
@@ -1312,7 +1356,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "critter-screen", "alc-screen", "event-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "critter-screen", "alc-screen", "gametitle-screen", "event-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -2014,10 +2058,18 @@
     dmConvoRef.on("value", function (snap) { renderDmConvos(snap.val()); });
   }
 
+  var dmReqSeen = {};
   function renderDmRequests(data) {
     var box = document.getElementById("dm-requests");
     box.innerHTML = "";
     var keys = data ? Object.keys(data) : [];
+    for (var n = 0; n < keys.length; n++) {
+      if (!dmReqSeen[keys[n]]) {
+        dmReqSeen[keys[n]] = 1;
+        var rn = (data[keys[n]] || {}).fromName || "someone";
+        notify("new DM request", rn + " wants to chat!", function () { enterDmScreen(); });
+      }
+    }
     if (!keys.length) { box.innerHTML = "<p>none</p>"; return; }
     for (var i = 0; i < keys.length; i++) {
       (function (fromUid) {
@@ -3715,21 +3767,118 @@
   }
   /* game menu: tiles open this, then pick bot or online */
   var gmGame = null;
+  /* ---------- popup notifications ---------- */
+  function notify(title, msg, onclick) {
+    var wrap = document.getElementById("notif-wrap");
+    var d = document.createElement("div");
+    d.className = "notif";
+    var t = document.createElement("div");
+    t.className = "notif-title";
+    t.textContent = title;
+    d.appendChild(t);
+    if (msg) {
+      var m = document.createElement("div");
+      m.textContent = msg;
+      d.appendChild(m);
+    }
+    d.onclick = function () {
+      if (onclick) { try { onclick(); } catch (e) {} }
+      if (d.parentNode) { d.parentNode.removeChild(d); }
+    };
+    wrap.appendChild(d);
+    setTimeout(function () { if (d.parentNode) { d.parentNode.removeChild(d); } }, 8000);
+    // keep max 3
+    while (wrap.children.length > 3) { wrap.removeChild(wrap.children[0]); }
+  }
+
+  /* ---------- game title screens ---------- */
+  var GAME_INFO = {
+    ttt: { title: "tic tac toe", desc: "Get three in a row before your opponent! Play against the bot or challenge someone online.",
+      settings: [{ id: "mode", label: "mode", opts: ["vs bot", "online"] }, { id: "diff", label: "bot difficulty", opts: ["easy", "hard"] }] },
+    c4: { title: "connect four", desc: "Drop discs and connect four in a row! Play against the bot or challenge someone online.",
+      settings: [{ id: "mode", label: "mode", opts: ["vs bot", "online"] }, { id: "diff", label: "bot difficulty", opts: ["easy", "hard"] }] },
+    chess: { title: "chess", desc: "The classic game of strategy. Play against the bot or challenge someone online.",
+      settings: [{ id: "mode", label: "mode", opts: ["vs bot", "online"] }, { id: "diff", label: "bot difficulty", opts: ["easy", "hard"] }] },
+    pic: { title: "pictionary", desc: "Draw the word and have your partner guess it! Online multiplayer only.",
+      settings: [] },
+    life: { title: "life sim", desc: "Live a whole life! Go to school, get a job, find love, have kids, and see how it all turns out.",
+      settings: [] },
+    gol: { title: "Zaya's game of life", desc: "Watch cells live and die by simple rules. Draw patterns and see what happens!",
+      settings: [{ id: "speed", label: "speed", opts: ["slow", "fast"] }] },
+    sol: { title: "solitaire", desc: "Classic Klondike solitaire. Stack cards and clear all four suits to win!",
+      settings: [{ id: "draw", label: "draw", opts: ["1", "3"] }] },
+    critter: { title: "critter catch", desc: "Catch wild critters, battle them, and build your collection! 12 original critters to find.",
+      settings: [] },
+    alc: { title: "alchemy", desc: "Mix elements to discover new ones! Start with 4 basics and find all 60+.",
+      settings: [] }
+  };
+  var gtGame = null, gtSettings = {};
+  function showGameTitle(g) {
+    var info = GAME_INFO[g];
+    if (!info) { return; }
+    gtGame = g;
+    gtSettings = {};
+    document.getElementById("gt-title").textContent = info.title;
+    document.getElementById("gt-desc").textContent = info.desc;
+    var box = document.getElementById("gt-settings");
+    box.innerHTML = "";
+    info.settings.forEach(function (s) {
+      gtSettings[s.id] = s.opts[0];
+      var row = document.createElement("div");
+      row.className = "setting-row";
+      var lab = document.createElement("p");
+      lab.textContent = s.label + ":";
+      row.appendChild(lab);
+      s.opts.forEach(function (o) {
+        (function (opt) {
+          var b = document.createElement("button");
+          b.textContent = opt;
+          if (opt === s.opts[0]) { b.className = "sel"; }
+          b.onclick = function () {
+            gtSettings[s.id] = opt;
+            var btns = row.getElementsByTagName("button");
+            for (var i = 0; i < btns.length; i++) { btns[i].className = ""; }
+            b.className = "sel";
+          };
+          row.appendChild(b);
+        })(o);
+      });
+      box.appendChild(row);
+    });
+    showScreen("gametitle-screen");
+  }
+  function gtStart() {
+    var g = gtGame;
+    if (!g) { return; }
+    if (g === "ttt" || g === "c4" || g === "chess" || g === "pic") {
+      // use existing game menu flow but with settings
+      if (gtSettings.mode === "online") { openGameMenu(g); document.getElementById("gm-host-btn").onclick(); }
+      else { openGameMenu(g); document.getElementById("gm-bot-btn").onclick(); }
+    }
+    else if (g === "life") { enterLife(); }
+    else if (g === "gol") { enterGol(); }
+    else if (g === "sol") { enterSol(); }
+    else if (g === "critter") { enterCritter(); }
+    else if (g === "alc") { enterAlc(); }
+  }
+
   function openGameMenu(g) {
     gmGame = g;
     document.getElementById("gm-title").textContent = g === "ttt" ? "tic tac toe" : g === "c4" ? "connect four" : g === "chess" ? "chess" : "pictionary";
     document.getElementById("gm-bot-btn").className = (g === "pic") ? "hidden" : "";
     showScreen("gamemenu-screen");
   }
-  document.getElementById("g-tile-ttt").onclick = function () { openGameMenu("ttt"); };
-  document.getElementById("g-tile-c4").onclick = function () { openGameMenu("c4"); };
-  document.getElementById("g-tile-chess").onclick = function () { openGameMenu("chess"); };
-  document.getElementById("g-tile-pic").onclick = function () { openGameMenu("pic"); };
-  document.getElementById("g-tile-life").onclick = function () { enterLife(); };
-  document.getElementById("g-tile-gol").onclick = function () { enterGol(); };
-  document.getElementById("g-tile-sol").onclick = function () { enterSol(); };
-  document.getElementById("g-tile-critter").onclick = function () { enterCritter(); };
-  document.getElementById("g-tile-alc").onclick = function () { enterAlc(); };
+  document.getElementById("g-tile-ttt").onclick = function () { showGameTitle("ttt"); };
+  document.getElementById("g-tile-c4").onclick = function () { showGameTitle("c4"); };
+  document.getElementById("g-tile-chess").onclick = function () { showGameTitle("chess"); };
+  document.getElementById("g-tile-pic").onclick = function () { showGameTitle("pic"); };
+  document.getElementById("g-tile-life").onclick = function () { showGameTitle("life"); };
+  document.getElementById("g-tile-gol").onclick = function () { showGameTitle("gol"); };
+  document.getElementById("g-tile-sol").onclick = function () { showGameTitle("sol"); };
+  document.getElementById("g-tile-critter").onclick = function () { showGameTitle("critter"); };
+  document.getElementById("g-tile-alc").onclick = function () { showGameTitle("alc"); };
+  document.getElementById("gt-start-btn").onclick = function () { gtStart(); };
+  document.getElementById("gt-back-btn").onclick = function () { enterGames(); };
   document.getElementById("alc-mix-btn").onclick = function () { alcMix(); };
   document.getElementById("alc-clear-btn").onclick = function () { alcSel = []; document.getElementById("alc-msg").textContent = ""; alcRender(); };
   document.getElementById("alc-home-btn").onclick = function () { enterGames(); };
@@ -7799,6 +7948,8 @@ function flairName(name, rec) {
       });
     } catch (e) {}
   }
+  var pollNotifiedAt = 0;
+  try { pollNotifiedAt = parseInt(localStorage.getItem("readium_pollNotified") || "0", 10); } catch (e) {}
   function updatePollDot() {
     var dot = document.getElementById("poll-dot2");
     if (!dot) { return; }
@@ -7807,6 +7958,11 @@ function flairName(name, rec) {
     db.ref("pollsMeta/lastPollAt").once("value", function (snap) {
       last = snap.val() || 0;
       dot.className = (last > seen) ? "dot" : "dot hidden";
+      if (last > pollNotifiedAt && last > seen) {
+        pollNotifiedAt = last;
+        try { localStorage.setItem("readium_pollNotified", String(last)); } catch (e) {}
+        notify("new poll!", "someone posted a poll — go vote!", function () { enterPoll(); });
+      }
     });
   }
   function renderPolls(data) {
