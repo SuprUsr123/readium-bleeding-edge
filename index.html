@@ -2073,6 +2073,8 @@
 
   function startDmWith(toUid, name) {
     var me = myUid();
+    if (!me) { showDmError("You need to be logged in."); return; }
+    showDmOk("Sending request to " + name + "...");
     db.ref("userDms/" + me + "/" + toUid).once("value", function (snap) {
       if (snap.exists()) {
         var c = snap.val();
@@ -2083,13 +2085,14 @@
         if (s2.exists()) { showDmOk("Request already sent — waiting for them."); return; }
         var reqData = { fromUid: me, fromName: displayName(), at: Date.now() };
         db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
-          if (err) { showDmError("Could not send request."); return; }
-          db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function () {
+          if (err) { showDmError("Could not send request: " + (err.message || err)); return; }
+          db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function (err2) {
+            if (err2) { showDmError("Request sent but tracking failed."); return; }
             showDmOk("Request sent to " + name + "! They'll see a dot on their DMs.");
           });
-        });
-      });
-    });
+        }, function (err) { showDmError("Could not check existing requests."); });
+      }, function (err) { showDmError("Could not check existing DMs."); });
+    }, function (err) { showDmError("Connection error. Try again."); });
   }
 
   function acceptDm(fromUid, fromName) {
