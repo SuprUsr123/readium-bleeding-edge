@@ -337,7 +337,8 @@
   .sug-done-text { text-decoration: line-through; opacity: 0.6; }
   .g-logo { display: block; height: 72px; }
   .g-label { display: block; font-size: 20px; margin-top: 4px; }
-  .g-logo-img { width: 64px; height: 64px; }
+  .g-logo { display: block; width: 100%; }
+  .g-logo-img { width: 100%; height: auto; display: block; }
   .section-head { text-align: left; }
   .section-body { border: 3px solid #111111; padding: 12px; margin-bottom: 8px; }
   #online-panel {
@@ -823,6 +824,7 @@
   <button id="alc-clear-btn" class="secondary">clear</button>
   <p id="alc-msg"></p>
   <h2>elements</h2>
+  <input id="alc-search" type="text" maxlength="30" placeholder="search elements..." autocomplete="off" style="width: 90%; margin-bottom: 8px;">
   <div id="alc-lib"></div>
   <h2>leaderboard</h2>
   <div id="alc-board"><p>loading...</p></div>
@@ -3884,6 +3886,7 @@
   document.getElementById("alc-mix-btn").onclick = function () { alcMix(); };
   document.getElementById("alc-clear-btn").onclick = function () { alcSel = []; document.getElementById("alc-msg").textContent = ""; alcRender(); };
   document.getElementById("alc-home-btn").onclick = function () { enterGames(); };
+  document.getElementById("alc-search").oninput = function () { alcSearchQ = this.value; alcRender(); };
   function showHelp(t) {
     document.getElementById("help-text").textContent = t;
     var hp = document.getElementById("help-popup");
@@ -7613,6 +7616,9 @@ function flairName(name, rec) {
   function enterAlc() {
     alcLoad();
     alcSel = [];
+    alcSearchQ = "";
+    var si = document.getElementById("alc-search");
+    if (si) { si.value = ""; }
     document.getElementById("alc-msg").textContent = "";
     showScreen("alc-screen");
     alcRender();
@@ -7641,11 +7647,16 @@ function flairName(name, rec) {
       }
     }, function (err) { box.innerHTML = "<p>could not load.</p>"; });
   }
+  var alcSearchQ = "";
   function alcRender() {
     var lib = document.getElementById("alc-lib");
     lib.innerHTML = "";
     var names = Object.keys(alcDiscovered).sort();
     document.getElementById("alc-count").textContent = names.length + " discovered";
+    if (alcSearchQ) {
+      var q = alcSearchQ.toLowerCase();
+      names = names.filter(function (n) { return n.toLowerCase().indexOf(q) !== -1; });
+    }
     for (var i = 0; i < names.length; i++) {
       (function (n) {
         var b = document.createElement("button");
