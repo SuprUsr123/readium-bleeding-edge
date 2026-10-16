@@ -108,9 +108,11 @@
     vertical-align: top;
     width: 46%;
     margin: 2%;
-    min-height: 80px;
-    font-size: 20px;
+    min-height: 110px;
+    font-size: 24px;
   }
+  #apps-screen button.hidden { display: none; }
+  #apps-screen #apps-back-btn { width: 96%; min-height: 60px; font-size: 20px; }
   #apps-screen h1 { width: 100%; }
   #alc-lib button, #alc-mix button {
     width: auto;
@@ -466,16 +468,7 @@
 <!-- ALL APPS -->
 <div id="apps-screen" class="hidden">
   <h1>all apps</h1>
-  <button id="apps-suggest-btn" class="secondary">suggestions</button>
-  <button id="apps-store-btn" class="secondary">store</button>
-  <button id="apps-board-btn" class="secondary">leaderboard</button>
-  <button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button>
-  <button id="apps-log-btn" class="secondary">changelog</button>
-  <button id="apps-settings-btn" class="secondary">settings</button>
-  <button id="apps-muse-btn" class="secondary hidden">muse</button>
-  <button id="apps-chatbot-btn" class="secondary">assistant</button>
-  <button id="apps-fullscreen-btn" class="secondary">full screen</button>
-  <button id="apps-back-btn" class="secondary">back</button>
+  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-back-btn" class="secondary">back</button>
 </div>
 
 <!-- MUSE ASSISTANT -->
@@ -709,6 +702,8 @@
   <button id="dash-xp-take-btn" class="secondary">take away xp</button>
   <h2>reports</h2>
   <div id="dash-reports"><p>loading...</p></div>
+  <h2>DM reports</h2>
+  <div id="dash-dm-reports"><p>loading...</p></div>
   <h2>banned users</h2>
   <input id="ban-input" type="text" maxlength="20" placeholder="username to ban...">
   <input id="ban-reason" type="text" maxlength="120" placeholder="reason for ban...">
@@ -808,6 +803,7 @@
 <!-- CHAT -->
 <div id="chat-screen" class="hidden">
   <h1 id="chat-title">room</h1>
+  <button id="dm-report-btn" class="mini secondary hidden" style="margin-bottom:8px">report this DM</button>
   <div id="pins-box"></div>
   <div id="messages"></div>
   <button id="latest-btn" class="mini secondary hidden">jump to latest</button>
@@ -894,6 +890,7 @@
     <p><b>DM requests</b> — better error messages when sending requests.</p>
     <p><b>bug check</b> — fixed fullscreen crash, poll dot, chess save/load, clock, logout button, dashboard feedback.</p>
     <p><b>apps grid</b> — all-apps screen now shows apps in a 2-column grid.</p>
+    <p><b>apps grid fix</b> — the grid was wrapping into a single list on some browsers; buttons are now proper tiles in 2 columns, and the muse button stays hidden for non-founders.</p>
     <h2>oct 14, 2026</h2>
     <p><b>22-item update</b> — dark mode, polls app, critter catch, store redesign, solitaire, and more!</p>
     <h2>oct 13, 2026</h2>
@@ -2259,6 +2256,7 @@
     showScreen("dash-screen");
     loadDashStats();
     loadReports();
+    loadDmReports();
     loadBans();
     var mw = document.getElementById("dash-mods-wrap");
     if (isFounder) { mw.className = ""; loadDashMods(); }
@@ -2507,6 +2505,68 @@
     if (dashReportsRef) { dashReportsRef.off(); dashReportsRef = null; }
     if (dashBansRef) { dashBansRef.off(); dashBansRef = null; }
   }
+  function loadDmReports() {
+    var box = document.getElementById("dash-dm-reports");
+    box.innerHTML = "<p>loading...</p>";
+    db.ref("dmReports").on("value", function (snap) {
+      renderDmReports(snap.val());
+    });
+  }
+  function renderDmReports(data) {
+    var box = document.getElementById("dash-dm-reports");
+    box.innerHTML = "";
+    var keys = data ? Object.keys(data) : [];
+    if (!keys.length) { box.innerHTML = "<p>no DM reports.</p>"; return; }
+    keys.sort(function (a, b) { return (data[b].at || 0) - (data[a].at || 0); });
+    for (var i = 0; i < keys.length; i++) {
+      (function (k) {
+        var r = data[k] || {};
+        var row = document.createElement("div");
+        row.className = "rep-row";
+        var p1 = document.createElement("p");
+        var b1 = document.createElement("b");
+        b1.textContent = "DM reported by " + (r.reporterName || "?");
+        p1.appendChild(b1);
+        row.appendChild(p1);
+        if (r.reason) {
+          var p2 = document.createElement("p");
+          p2.textContent = "reason: " + r.reason;
+          row.appendChild(p2);
+        }
+        var btnRow = document.createElement("div");
+        var viewBtn = document.createElement("button");
+        viewBtn.className = "mini secondary";
+        viewBtn.textContent = "view DM";
+        viewBtn.onclick = function () { viewReportedDm(r.dmId); };
+        btnRow.appendChild(viewBtn);
+        var delBtn = document.createElement("button");
+        delBtn.className = "mini secondary";
+        delBtn.textContent = "dismiss";
+        delBtn.onclick = function () {
+          askConfirm("Dismiss this DM report?", function () {
+            db.ref("dmReports/" + k).remove();
+          });
+        };
+        btnRow.appendChild(delBtn);
+        row.appendChild(btnRow);
+        box.appendChild(row);
+      })(keys[i]);
+    }
+  }
+  function viewReportedDm(dmId) {
+    if (!dmId) { return; }
+    // open the DM so the mod can read the full conversation
+    db.ref("dms/" + dmId + "/messages").limitToLast(50).once("value", function (snap) {
+      var msgs = snap.val() || {};
+      var keys = Object.keys(msgs).sort();
+      var text = "DM conversation:\n\n";
+      for (var i = 0; i < keys.length; i++) {
+        var m = msgs[keys[i]] || {};
+        text += (m.name || "?") + ": " + (m.text || "") + "\n";
+      }
+      alert(text || "no messages in this DM");
+    });
+  }
   function loadBans() {
     var box = document.getElementById("dash-bans");
     box.innerHTML = "<p>loading...</p>";
@@ -2643,6 +2703,7 @@
     });
   }
   document.getElementById("dash-xp-btn").onclick = dashGrantXp;
+  document.getElementById("dm-report-btn").onclick = reportCurrentDm;
   document.getElementById("dash-xp-take-btn").onclick = dashTakeXp;
   document.getElementById("dash-search").oninput = function () {
     if (dashSearchTimer) { clearTimeout(dashSearchTimer); }
@@ -2985,6 +3046,35 @@
   };
 
   /* ---------- chat ---------- */
+  function reportCurrentDm() {
+    if (!currentRefPath || currentRefPath.indexOf("dms/") !== 0) { return; }
+    var dmId = currentRefPath.split("/")[1];
+    var reason = prompt("Why are you reporting this DM?", "");
+    if (reason === null) { return; } // cancelled
+    reason = String(reason || "").trim().substring(0, 200);
+    db.ref("dms/" + dmId).once("value", function (snap) {
+      var dm = snap.val() || {};
+      var otherUid = "";
+      // find the other person in this DM
+      db.ref("userDms/" + myUid()).once("value", function (usnap) {
+        var convos = usnap.val() || {};
+        for (var k in convos) {
+          if (convos[k] && convos[k].dmId === dmId) { otherUid = k; break; }
+        }
+        db.ref("dmReports").push({
+          dmId: dmId,
+          reporter: myUid(),
+          reporterName: displayName(),
+          reportedUid: otherUid,
+          reason: reason,
+          at: Date.now(),
+          seen: false
+        }, function () {
+          flashNotice("DM reported. mods will review it.");
+        });
+      });
+    });
+  }
   function openChat(refPath, title, returnTo) {
     if (messagesRef) { messagesRef.off(); }
     if (pinsRef) { pinsRef.off(); pinsRef = null; }
@@ -2996,6 +3086,9 @@
     document.getElementById("latest-btn").className = "mini secondary hidden";
     document.getElementById("chat-title").textContent = title;
     currentRefPath = refPath;
+    // show report button only for DMs
+    var isDmChat = refPath.indexOf("dms/") === 0;
+    document.getElementById("dm-report-btn").className = isDmChat ? "mini secondary" : "mini secondary hidden";
     currentChatTitle = title;
     if (refPath.indexOf("rooms/") === 0) { currentConvoKey = "r_" + refPath.split("/")[1]; }
     else if (refPath.indexOf("dms/") === 0) { currentConvoKey = "d_" + refPath.split("/")[1]; }
