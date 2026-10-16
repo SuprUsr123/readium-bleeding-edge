@@ -452,7 +452,8 @@
   </div>
   <div class="logo" aria-label="Readium!"><span style="transform: rotate(-5deg)">R</span><span style="transform: rotate(3deg)">e</span><span style="transform: rotate(-2deg)">a</span><span style="transform: rotate(4deg)">d</span><span style="transform: rotate(-3deg)">i</span><span style="transform: rotate(2deg)">u</span><span style="transform: rotate(-4deg)">m</span><span style="transform: rotate(3deg)">!</span></div>
   <div class="logo-bar"></div>
-  <p class="subtext">October event is LIVE!!! -chickn</p>
+  <p class="subtext" id="home-tagline">October event is LIVE!!! -chickn</p>
+  <button id="tagline-edit-btn" class="mini secondary hidden">edit tagline</button>
   <button id="messages-btn">messages <span class="dm-dot dot hidden"></span></button>
   <button id="event-btn" class="event-btn">october event</button>
   <button id="games-btn" class="secondary">games</button>
@@ -1713,6 +1714,30 @@
   };
 
   /* ---------- navigation ---------- */
+  
+  function loadTagline() {
+    var el = document.getElementById("home-tagline");
+    if (!el) { return; }
+    db.ref("siteConfig/tagline").once("value", function (snap) {
+      var t = snap.val();
+      if (t) { el.textContent = t; }
+    });
+    // show edit button for founder
+    var btn = document.getElementById("tagline-edit-btn");
+    if (btn) {
+      btn.classList.toggle("hidden", !isFounder);
+      btn.onclick = function () {
+        var cur = document.getElementById("home-tagline").textContent;
+        var nt = prompt("Edit the tagline under the logo:", cur);
+        if (nt !== null && nt.trim() !== "") {
+          db.ref("siteConfig/tagline").set(nt.trim(), function (err) {
+            if (!err) { document.getElementById("home-tagline").textContent = nt.trim(); }
+            else { alert("Failed: " + (err.code || err.message)); }
+          });
+        }
+      };
+    }
+  }
   function goHome() {
     stopAll();
     wantMsgs = false;
@@ -1721,6 +1746,7 @@
     wantSuggest = false;
     refreshHome();
     showScreen("home-screen");
+    loadTagline();
   }
   document.getElementById("msgs-home-btn").onclick = goHome;
   document.getElementById("chat-home-btn").onclick = goHome;
@@ -1898,6 +1924,10 @@
     if (!uid) { return; }
     db.ref("mentionNotifs/" + uid).once("value", function (snap) {
       renderMentions(snap.val());
+      // clear notifications so the dot goes away
+      if (snap.exists()) {
+        db.ref("mentionNotifs/" + uid).remove();
+      }
     });
   }
   function renderMentions(data) {
