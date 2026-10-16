@@ -473,7 +473,7 @@
 <!-- ALL APPS -->
 <div id="apps-screen" class="hidden">
   <h1>all apps</h1>
-  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
+  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-poxel-btn" class="secondary">poxel</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
 </div>
 
 <!-- DONATE -->
@@ -824,6 +824,26 @@
   <button id="pfp-clear-btn" class="secondary">clear</button>
   <button id="pfp-save-btn">save picture</button>
   <button id="pfp-back-btn" class="secondary">back</button>
+</div>
+
+<!-- POXEL - pixel art studio -->
+<div id="poxel-screen" class="hidden">
+  <h1>poxel</h1>
+  <p style="font-size:16px">make pixel art! pick a size, draw, save. set any 16x16 as your pfp.</p>
+  <div style="margin:8px 0">
+    <span style="font-size:16px">size: </span>
+    <button id="poxel-size-8" class="mini secondary">8x8</button>
+    <button id="poxel-size-16" class="mini secondary">16x16</button>
+    <button id="poxel-size-32" class="mini secondary">32x32</button>
+  </div>
+  <div id="poxel-palette"></div>
+  <div id="poxel-grid" style="margin:8px 0"></div>
+  <button id="poxel-clear-btn" class="secondary">clear</button>
+  <button id="poxel-save-btn">save art</button>
+  <button id="poxel-pfp-btn" class="secondary">set as my pfp</button>
+  <h2>my gallery</h2>
+  <div id="poxel-gallery"></div>
+  <button id="poxel-back-btn" class="secondary">back</button>
 </div>
 
 <!-- CHAT -->
@@ -1480,7 +1500,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -3223,6 +3243,156 @@
     db.ref("users/" + u.uid).update({ pfp: editPfpStr }, function () { refreshHome(); enterProfile(); });
   };
   document.getElementById("pfp-back-btn").onclick = enterProfile;
+
+  /* ---------- poxel pixel art studio ---------- */
+  var poxelSize = 16;
+  var poxelData = "";
+  var poxelColor = "1";
+  var poxelPainting = false;
+  function poxelBlank(size) {
+    var s = "";
+    for (var i = 0; i < size * size; i++) { s += "0"; }
+    return s;
+  }
+  function buildPoxelGrid() {
+    var grid = document.getElementById("poxel-grid");
+    grid.innerHTML = "";
+    var cellPx = poxelSize <= 8 ? 24 : (poxelSize <= 16 ? 18 : 10);
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(" + poxelSize + ", " + cellPx + "px)";
+    grid.style.justifyContent = "center";
+    for (var i = 0; i < poxelSize * poxelSize; i++) {
+      (function (i) {
+        var cell = document.createElement("div");
+        cell.style.width = cellPx + "px";
+        cell.style.height = cellPx + "px";
+        cell.style.border = "1px solid #ccc";
+        cell.style.boxSizing = "border-box";
+        var ci = poxelData.charAt(i) || "0";
+        cell.style.background = PALETTE[parseInt(ci, 10)] || PALETTE[0];
+        var paint = function () {
+          var col = (poxelColor === "e") ? "0" : poxelColor;
+          poxelData = poxelData.substring(0, i) + col + poxelData.substring(i + 1);
+          cell.style.background = PALETTE[parseInt(col, 10)];
+        };
+        cell.onmousedown = function (e) { poxelPainting = true; paint(); if (e && e.preventDefault) { e.preventDefault(); } };
+        cell.onmouseover = function () { if (poxelPainting) { paint(); } };
+        cell.ontouchstart = function (e) { paint(); if (e && e.preventDefault) { e.preventDefault(); } };
+        grid.appendChild(cell);
+      })(i);
+    }
+  }
+  function buildPoxelPalette() {
+    var pal = document.getElementById("poxel-palette");
+    pal.innerHTML = "";
+    var labels = ["white", "gray", "dark", "black", "erase"];
+    for (var c = 0; c < 5; c++) {
+      (function (c) {
+        var key = c < 4 ? String(c) : "e";
+        var s = document.createElement("div");
+        s.className = "swatch" + (poxelColor === key ? " sel" : "");
+        s.title = labels[c];
+        s.style.display = "inline-block";
+        s.style.width = "32px"; s.style.height = "32px";
+        s.style.margin = "2px"; s.style.border = "2px solid transparent";
+        if (poxelColor === key) { s.style.borderColor = "#000"; }
+        if (c < 4) { s.style.background = PALETTE[c]; }
+        else { s.style.background = "#fff"; s.textContent = "X"; s.style.textAlign = "center"; s.style.lineHeight = "32px"; }
+        s.onclick = function () { poxelColor = key; buildPoxelPalette(); };
+        pal.appendChild(s);
+      })(c);
+    }
+  }
+  function poxelSetSize(s) {
+    poxelSize = s;
+    poxelData = poxelBlank(s);
+    buildPoxelGrid();
+    var b8 = document.getElementById("poxel-size-8");
+    var b16 = document.getElementById("poxel-size-16");
+    var b32 = document.getElementById("poxel-size-32");
+    if (b8) { b8.textContent = s === 8 ? "8x8 \u2713" : "8x8"; }
+    if (b16) { b16.textContent = s === 16 ? "16x16 \u2713" : "16x16"; }
+    if (b32) { b32.textContent = s === 32 ? "32x32 \u2713" : "32x32"; }
+  }
+  function getPoxelGallery() {
+    try { return JSON.parse(localStorage.getItem("poxel_gallery") || "[]"); }
+    catch (e) { return []; }
+  }
+  function savePoxelGallery(g) {
+    try { localStorage.setItem("poxel_gallery", JSON.stringify(g)); } catch (e) {}
+  }
+  function poxelScaleTo16(data, fromSize) {
+    var out = "";
+    for (var y = 0; y < 16; y++) {
+      for (var x = 0; x < 16; x++) {
+        var sx = Math.floor(x * fromSize / 16);
+        var sy = Math.floor(y * fromSize / 16);
+        out += data.charAt(sy * fromSize + sx) || "0";
+      }
+    }
+    return out;
+  }
+  function renderPoxelGallery() {
+    var box = document.getElementById("poxel-gallery");
+    box.innerHTML = "";
+    var g = getPoxelGallery();
+    if (!g.length) { box.innerHTML = "<p>no saved art yet</p>"; return; }
+    for (var i = g.length - 1; i >= 0; i--) {
+      (function (idx) {
+        var item = g[idx];
+        var wrap = document.createElement("div");
+        wrap.style.display = "inline-block"; wrap.style.margin = "4px"; wrap.style.textAlign = "center";
+        var img = pfpImg(poxelScaleTo16(item.data, item.size), 3);
+        wrap.appendChild(img);
+        var lbl = document.createElement("div");
+        lbl.style.fontSize = "12px"; lbl.textContent = item.size + "x" + item.size;
+        wrap.appendChild(lbl);
+        var useBtn = document.createElement("button");
+        useBtn.className = "mini secondary"; useBtn.textContent = "set as pfp"; useBtn.style.fontSize = "12px";
+        useBtn.onclick = function () {
+          var pfp16 = poxelScaleTo16(item.data, item.size);
+          var u = auth.currentUser;
+          if (!u) { return; }
+          currentPfp = pfp16;
+          db.ref("users/" + u.uid).update({ pfp: pfp16 }, function () { refreshHome(); });
+        };
+        wrap.appendChild(useBtn);
+        var delBtn = document.createElement("button");
+        delBtn.className = "mini secondary"; delBtn.textContent = "x"; delBtn.style.fontSize = "12px";
+        delBtn.onclick = function () {
+          var gg = getPoxelGallery(); gg.splice(idx, 1); savePoxelGallery(gg); renderPoxelGallery();
+        };
+        wrap.appendChild(delBtn);
+        box.appendChild(wrap);
+      })(i);
+    }
+  }
+  function enterPoxel() {
+    poxelSetSize(16);
+    buildPoxelPalette();
+    renderPoxelGallery();
+    showScreen("poxel-screen");
+  }
+  document.getElementById("apps-poxel-btn").onclick = function () { enterPoxel(); };
+  document.getElementById("poxel-size-8").onclick = function () { poxelSetSize(8); };
+  document.getElementById("poxel-size-16").onclick = function () { poxelSetSize(16); };
+  document.getElementById("poxel-size-32").onclick = function () { poxelSetSize(32); };
+  document.getElementById("poxel-clear-btn").onclick = function () { poxelData = poxelBlank(poxelSize); buildPoxelGrid(); };
+  document.getElementById("poxel-save-btn").onclick = function () {
+    var g = getPoxelGallery();
+    g.push({ size: poxelSize, data: poxelData, at: Date.now() });
+    savePoxelGallery(g);
+    renderPoxelGallery();
+  };
+  document.getElementById("poxel-pfp-btn").onclick = function () {
+    var pfp16 = poxelScaleTo16(poxelData, poxelSize);
+    var u = auth.currentUser;
+    if (!u) { return; }
+    currentPfp = pfp16;
+    db.ref("users/" + u.uid).update({ pfp: pfp16 }, function () { refreshHome(); showScreen("apps-screen"); });
+  };
+  document.getElementById("poxel-back-btn").onclick = function () { showScreen("apps-screen"); };
+  document.addEventListener("mouseup", function () { poxelPainting = false; });
 
   /* profile popup */
   function openProfileByName(name) {
