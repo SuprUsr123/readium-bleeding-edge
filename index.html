@@ -1322,6 +1322,10 @@
     return rows.join("");
   }
   function pfpURL(pfpStr) {
+    // validate: must be a 256-char string of 0-3, else use default face
+    if (typeof pfpStr !== "string" || pfpStr.length !== 256 || /[^0-3]/.test(pfpStr)) {
+      pfpStr = blankPfp();
+    }
     if (pfpCache[pfpStr]) { return pfpCache[pfpStr]; }
     var url = "";
     try {
@@ -1341,17 +1345,23 @@
       }
       url = cv.toDataURL("image/png");
     } catch (e) { url = ""; }
+    if (!url) { url = pfpURL(blankPfp()); }
     pfpCache[pfpStr] = url;
     return url;
   }
   var pfpUserCache = {};
   function fillPfpImg(img, uid) {
-    if (!uid) { return; }
+    if (!uid) { img.src = pfpURL(blankPfp()); return; }
     if (pfpUserCache[uid]) { img.src = pfpURL(pfpUserCache[uid]); return; }
+    // set default immediately so something shows even if the read fails
+    try { img.src = pfpURL(blankPfp()); } catch (e) {}
     db.ref("users/" + uid + "/pfp").once("value", function (snap) {
       var s = snap.val() || blankPfp();
       pfpUserCache[uid] = s;
       try { img.src = pfpURL(s); } catch (e) {}
+    }, function (err) {
+      // read failed (e.g. permissions) — keep the default face
+      pfpUserCache[uid] = blankPfp();
     });
   }
   function pfpImg(pfpStr, px) {
