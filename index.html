@@ -310,6 +310,9 @@
   #ttt-board .cell:disabled { color: #111111; opacity: 1; background: #ffffff; }
   #c4-board { margin-bottom: 12px; text-align: center; }
   .c4-row { white-space: nowrap; }
+  body.bigfont { font-size: 125%; }
+  body.bigfont button { font-size: 1.1em; }
+  body.bigfont input, body.bigfont textarea { font-size: 1.1em; }
   #messages p, .hood-post-text, .suggest-text { white-space: pre-wrap; word-wrap: break-word; }
   .c4-cell {
     width: 44px;
@@ -3874,7 +3877,12 @@
   function applyFontSize() {
     var big = false;
     try { big = localStorage.getItem("readium_bigfont") === "1"; } catch (e) {}
-    try { document.body.style.zoom = big ? "1.25" : "1"; } catch (e2) {}
+    try {
+      if (big) { document.body.classList.add("bigfont"); }
+      else { document.body.classList.remove("bigfont"); }
+      // fallback for old browsers
+      document.body.style.zoom = big ? "1.25" : "1";
+    } catch (e2) {}
     var nb = document.getElementById("font-normal-btn");
     var lb = document.getElementById("font-large-btn");
     if (nb) { nb.textContent = big ? "normal text" : "normal text \u2713"; }
