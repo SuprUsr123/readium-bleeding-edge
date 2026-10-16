@@ -934,7 +934,7 @@
 
 <!-- GAMBLE -->
 <div id="gamble-screen" class="hidden">
-  <h1>gamble <button class="mini secondary game-help-btn" data-help="bet your xp on coin flip, dice, or slots! wins give you more xp, losses take it away. the biggest losers board shows who lost the most.">?</button></h1>
+  <h1>gamble <button class="mini secondary game-help-btn" data-help="bet your xp on coin flip, dice, slots, or blackjack! wins give you more xp, losses take it away. the biggest losers board shows who lost the most.">?</button></h1>
   <p id="gamble-xp"></p>
   <h2>your bet</h2>
   <div id="gamble-betrow"></div>
@@ -945,11 +945,21 @@
   <h2>coin flip — pick one, win 2x</h2>
   <button id="gamble-heads">heads</button>
   <button id="gamble-tails">tails</button>
+  <p id="gamble-coin-msg"></p>
   <h2>dice — pick a number, win 6x</h2>
   <div id="gamble-dicerow"></div>
+  <p id="gamble-dice-msg"></p>
   <h2>slots — pairs win 2x, triples win 10x</h2>
   <button id="gamble-spin">spin!</button>
-  <p id="gamble-msg"></p>
+  <p id="gamble-slots-msg"></p>
+  <h2>blackjack — beat the dealer, win 2x</h2>
+  <div id="gamble-bj-area">
+    <p id="gamble-bj-cards"></p>
+    <button id="gamble-bj-deal">deal</button>
+    <button id="gamble-bj-hit" class="secondary hidden">hit</button>
+    <button id="gamble-bj-stand" class="secondary hidden">stand</button>
+  </div>
+  <p id="gamble-bj-msg"></p>
   <h2>biggest losers</h2>
   <div id="gamble-losers"><p>loading...</p></div>
   <h2>biggest winners</h2>
@@ -2764,6 +2774,12 @@
     });
   }
   document.getElementById("dash-xp-btn").onclick = dashGrantXp;
+  var bjDeal = document.getElementById("gamble-bj-deal");
+  if (bjDeal) {
+    bjDeal.onclick = gambleBjDeal;
+    document.getElementById("gamble-bj-hit").onclick = gambleBjHit;
+    document.getElementById("gamble-bj-stand").onclick = gambleBjStand;
+  }
   var gcb = document.getElementById("gamble-custom-btn");
   if (gcb) {
     gcb.onclick = function () {
@@ -7832,9 +7848,10 @@ function flairName(name, rec) {
     if (myXp < GAMBLE_BET) { flashNotice("not enough xp!"); return false; }
     return true;
   }
-  function gambleSettle(win, profitMult, label) {
+  function gambleSettle(win, profitMult, label, msgId) {
     var u = myUid();
-    var msg = document.getElementById("gamble-msg");
+    var msg = document.getElementById(msgId || "gamble-msg");
+    if (!msg) { msg = document.getElementById("gamble-msg"); }
     if (win) {
       var profit = GAMBLE_BET * profitMult;
       changeXp(u, profit);
@@ -7850,12 +7867,12 @@ function flairName(name, rec) {
   function gambleCoin(pick) {
     if (!gambleBetOk()) { return; }
     var flip = Math.random() < 0.5 ? "heads" : "tails";
-    gambleSettle(flip === pick, 1, flip + "! ");
+    gambleSettle(flip === pick, 1, flip + "! ", "gamble-coin-msg");
   }
   function gambleDice(pick) {
     if (!gambleBetOk()) { return; }
     var roll = 1 + Math.floor(Math.random() * 6);
-    gambleSettle(roll === pick, 5, "rolled a " + roll + "! ");
+    gambleSettle(roll === pick, 5, "rolled a " + roll + "! ", "gamble-dice-msg");
   }
   function gambleSlots() {
     if (!gambleBetOk()) { return; }
@@ -7863,10 +7880,99 @@ function flairName(name, rec) {
       return GAMBLE_SLOTS[Math.floor(Math.random() * GAMBLE_SLOTS.length)];
     });
     var faces = r.join(" ");
-    if (r[0] === "7" && r[1] === "7" && r[2] === "7") { gambleSettle(true, 19, faces + " JACKPOT! "); }
-    else if (r[0] === r[1] && r[1] === r[2]) { gambleSettle(true, 9, faces + " triple! "); }
-    else if (r[0] === r[1] || r[1] === r[2] || r[0] === r[2]) { gambleSettle(true, 1, faces + " pair! "); }
-    else { gambleSettle(false, 0, faces + " "); }
+    if (r[0] === "7" && r[1] === "7" && r[2] === "7") { gambleSettle(true, 19, faces + " JACKPOT! ", "gamble-slots-msg"); }
+    else if (r[0] === r[1] && r[1] === r[2]) { gambleSettle(true, 9, faces + " triple! ", "gamble-slots-msg"); }
+    else if (r[0] === r[1] || r[1] === r[2] || r[0] === r[2]) { gambleSettle(true, 1, faces + " pair! ", "gamble-slots-msg"); }
+    else { gambleSettle(false, 0, faces + " ", "gamble-slots-msg"); }
+  }
+  // blackjack
+  var BJ_DECK = null, BJ_PLAYER = null, BJ_DEALER = null;
+  function bjCardValue(hand) {
+    var total = 0, aces = 0;
+    for (var i = 0; i < hand.length; i++) {
+      var c = hand[i];
+      if (c === 1) { aces++; total += 11; }
+      else if (c > 10) { total += 10; }
+      else { total += c; }
+    }
+    while (total > 21 && aces > 0) { total -= 10; aces--; }
+    return total;
+  }
+  function bjCardName(c) {
+    if (c === 1) { return "A"; }
+    if (c === 11) { return "J"; }
+    if (c === 12) { return "Q"; }
+    if (c === 13) { return "K"; }
+    return String(c);
+  }
+  function bjRender(hideDealer) {
+    var el = document.getElementById("gamble-bj-cards");
+    if (!el) { return; }
+    var pStr = BJ_PLAYER.map(bjCardName).join(" ") + " (" + bjCardValue(BJ_PLAYER) + ")";
+    var dStr;
+    if (hideDealer) {
+      dStr = bjCardName(BJ_DEALER[0]) + " ? (?)";
+    } else {
+      dStr = BJ_DEALER.map(bjCardName).join(" ") + " (" + bjCardValue(BJ_DEALER) + ")";
+    }
+    el.textContent = "you: " + pStr + " | dealer: " + dStr;
+  }
+  function bjDraw() {
+    return 1 + Math.floor(Math.random() * 13);
+  }
+  function gambleBjDeal() {
+    if (!gambleBetOk()) { return; }
+    BJ_PLAYER = [bjDraw(), bjDraw()];
+    BJ_DEALER = [bjDraw(), bjDraw()];
+    document.getElementById("gamble-bj-msg").textContent = "";
+    bjRender(true);
+    document.getElementById("gamble-bj-deal").className = "secondary hidden";
+    document.getElementById("gamble-bj-hit").className = "secondary";
+    document.getElementById("gamble-bj-stand").className = "secondary";
+    // check for blackjack
+    if (bjCardValue(BJ_PLAYER) === 21) { gambleBjStand(); }
+  }
+  function gambleBjHit() {
+    if (!BJ_PLAYER) { return; }
+    BJ_PLAYER.push(bjDraw());
+    bjRender(true);
+    if (bjCardValue(BJ_PLAYER) > 21) {
+      // bust
+      bjRender(false);
+      gambleBjEnd();
+    } else if (bjCardValue(BJ_PLAYER) === 21) {
+      gambleBjStand();
+    }
+  }
+  function gambleBjStand() {
+    if (!BJ_PLAYER) { return; }
+    // dealer hits until 17
+    while (bjCardValue(BJ_DEALER) < 17) { BJ_DEALER.push(bjDraw()); }
+    bjRender(false);
+    gambleBjEnd();
+  }
+  function gambleBjEnd() {
+    var pv = bjCardValue(BJ_PLAYER), dv = bjCardValue(BJ_DEALER);
+    var msg = "you: " + pv + ", dealer: " + dv + ". ";
+    document.getElementById("gamble-bj-deal").className = "secondary";
+    document.getElementById("gamble-bj-hit").className = "secondary hidden";
+    document.getElementById("gamble-bj-stand").className = "secondary hidden";
+    if (pv > 21) {
+      gambleSettle(false, 0, msg + "bust! ", "gamble-bj-msg");
+    } else if (dv > 21) {
+      gambleSettle(true, 1, msg + "dealer busts! ", "gamble-bj-msg");
+    } else if (pv > dv) {
+      // blackjack pays 1.5x profit (2.5x total, but our settle uses profit mult)
+      var isBj = (BJ_PLAYER.length === 2 && pv === 21);
+      gambleSettle(true, isBj ? 1.5 : 1, msg + (isBj ? "blackjack! " : "you win! "), "gamble-bj-msg");
+    } else if (pv < dv) {
+      gambleSettle(false, 0, msg + "dealer wins. ", "gamble-bj-msg");
+    } else {
+      // push - return bet (no win, no loss)
+      document.getElementById("gamble-bj-msg").textContent = msg + "push! bet returned.";
+      gambleRefreshXp();
+    }
+    BJ_PLAYER = null; BJ_DEALER = null;
   }
   function gambleLoadBoards() {
     var lb = document.getElementById("gamble-losers");
