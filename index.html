@@ -2314,7 +2314,7 @@
           var c = data[otherUid] || {};
           var dmId = c.dmId;
           if (!dmId || dmMsgWatch[dmId]) { return; }
-          var w = { name: c.name || "someone", lastKey: null, ref: null };
+          var w = { name: c.name || "someone", lastKey: "init", ref: null };
           dmMsgWatch[dmId] = w;
           w.ref = db.ref("dms/" + dmId + "/messages").limitToLast(1);
           w.ref.once("value", function (s) {
@@ -2324,6 +2324,8 @@
           });
           w.ref.on("child_added", function (ms) {
             var m = ms.val() || {};
+            // skip if still initializing (once hasn't returned yet)
+            if (w.lastKey === "init") { return; }
             if (w.lastKey === null) { w.lastKey = ms.key; return; }
             if (ms.key === w.lastKey) { return; }
             w.lastKey = ms.key;
