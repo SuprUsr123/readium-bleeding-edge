@@ -8222,49 +8222,99 @@ function flairName(name, rec) {
     }, 500);
   }
   function chatbotReply(text) {
-    var t = text.toLowerCase();
-    if (/\b(hi|hello|hey|yo|sup)\b/.test(t)) {
-      return "hey! what's up?";
+    var t = text.toLowerCase().trim();
+    // greetings
+    if (/^(hi|hello|hey|yo|sup|hello there|hey there)[!?.]*$/.test(t)) {
+      var greets = ["hey! what's up?", "hi there! how's it going?", "hey hey! what can i do for you?"];
+      return greets[Math.floor(Math.random() * greets.length)];
     }
+    // how are you
+    if (t.indexOf("how are you") !== -1 || t.indexOf("how r u") !== -1) {
+      return "i'm doing great! thanks for asking! how are you doing?";
+    }
+    // name
+    if (t.indexOf("your name") !== -1 || t.indexOf("who are you") !== -1) {
+      return "i'm the readium assistant! i'm here to chat and help!";
+    }
+    // games
     if (t.indexOf("game") !== -1) {
-      return "we've got 9 games! tic-tac-toe, connect four, chess, pictionary, life sim, zaya's game of life, solitaire, critter catch, and alchemy. which one do you like?";
+      if (t.indexOf("chess") !== -1) return "chess is awesome! you can play against the bot or with friends in game lobbies!";
+      if (t.indexOf("solitaire") !== -1) return "solitaire is classic! klondike style, draw 1. win for 10 xp!";
+      if (t.indexOf("tic") !== -1) return "tic-tac-toe! play vs the bot with different difficulties!";
+      if (t.indexOf("alchemy") !== -1) return "alchemy is so fun! mix elements to discover new ones. 2 xp per discovery!";
+      if (t.indexOf("critter") !== -1 || t.indexOf("pokemon") !== -1) return "critter catch is like pokemon! catch 12 original critters, battle and level them up!";
+      if (t.indexOf("life") !== -1) return "we have TWO life games! life sim (bitlife-style) and zaya's game of life (conway's)!";
+      if (t.indexOf("pictionary") !== -1) return "pictionary is... having some issues right now, but we're working on it!";
+      return "we've got 9 games! tic-tac-toe, connect four, chess, pictionary, life sim, zaya's game of life, solitaire, critter catch, and alchemy!";
     }
-    if (t.indexOf("event") !== -1 || t.indexOf("halloween") !== -1 || t.indexOf("october") !== -1) {
-      return "the october event is live! knock on doors to get candy and join a team - pumpkin, black cat, ghost, or bat!";
+    // events
+    if (t.indexOf("event") !== -1 || t.indexOf("halloween") !== -1 || t.indexOf("october") !== -1 || t.indexOf("candy") !== -1 || t.indexOf("door") !== -1) {
+      return "the october event is live! knock on 6 doors every 2 hours to get candy. join a team - pumpkin, black cat, ghost, or bat - and climb the leaderboard!";
     }
+    // xp
     if (t.indexOf("xp") !== -1) {
-      return "you get xp for chatting, playing games, and being active! check the leaderboard to see who's on top.";
+      return "you get xp for chatting (1 per message), winning games, and being active! check the leaderboard to see the top 20!";
     }
-    if (t.indexOf("dm") !== -1 || t.indexOf("message") !== -1) {
-      return "you can dm people from the messages screen! search for someone and send them a request.";
+    // dms
+    if (t.indexOf("dm") !== -1 || t.indexOf("direct message") !== -1) {
+      return "to dm someone, go to messages, search for their username, and send a request! they'll get a notification.";
     }
+    // chickn
     if (t.indexOf("chickn") !== -1) {
-      return "chickn is the founder of readium! she's awesome.";
+      return "chickn is the founder of readium! she built this whole thing!";
     }
+    // store
+    if (t.indexOf("store") !== -1 || t.indexOf("buy") !== -1 || t.indexOf("shop") !== -1) {
+      return "the store has themes, xp boosts, and mystery boxes! spend your xp on cool stuff for your profile!";
+    }
+    // polls
+    if (t.indexOf("poll") !== -1 || t.indexOf("vote") !== -1) {
+      return "polls are created by chickn! vote on them and see live results!";
+    }
+    // help
+    if (t.indexOf("help") !== -1) {
+      return "i can answer questions about games, events, xp, dms, the store, and more! or just chat! say 'joke' for a laugh!";
+    }
+    // jokes
     if (t.indexOf("joke") !== -1) {
       var jokes = [
         "why don't scientists trust atoms? because they make up everything!",
         "what do you call fake spaghetti? an impasta!",
-        "why did the scarecrow win an award? because he was outstanding in his field!"
+        "why did the scarecrow win an award? because he was outstanding in his field!",
+        "what do you call a fish without eyes? a fsh!",
+        "why did the math book look so sad? because it had too many problems!"
       ];
       return jokes[Math.floor(Math.random() * jokes.length)];
     }
-    if (t.indexOf("bye") !== -1) {
+    // love/like
+    if (t.indexOf("i love you") !== -1 || t.indexOf("i like you") !== -1) {
+      return "aww, i like you too! you're awesome!";
+    }
+    // bye
+    if (t.indexOf("bye") !== -1 || t.indexOf("goodnight") !== -1 || t.indexOf("good night") !== -1) {
       return "bye! come back soon!";
     }
+    // thanks
     if (t.indexOf("thank") !== -1) {
-      return "you're welcome!";
+      return "you're welcome! happy to help!";
     }
+    // questions - try to be helpful instead of generic
     if (t.indexOf("?") !== -1) {
-      return "hmm, i'm just a simple bot! try asking about games, events, xp, or dms. or say 'joke' for a laugh!";
+      if (t.indexOf("what") !== -1) return "that's a good question! i'm still learning, but try asking about games, events, or xp!";
+      if (t.indexOf("how") !== -1) return "great question! i can help with how things work - try asking about a specific feature like dms or games!";
+      if (t.indexOf("when") !== -1) return "hmm, not sure about timing! the october event runs until nov 7 though!";
+      if (t.indexOf("where") !== -1) return "everything's right here in readium! check the apps screen for all the features!";
+      if (t.indexOf("why") !== -1) return "good question! i'm not sure, but chickn probably has a good reason!";
+      return "hmm, i'm not sure about that one! try asking about games, events, xp, or say 'help'!";
     }
-    var defaults = [
-      "cool! tell me more.",
-      "interesting! what else?",
-      "nice! i like chatting with you.",
-      "oh yeah? go on!"
+    // fallback - more conversational, less repetitive
+    var fallbacks = [
+      "oh interesting! tell me more about that.",
+      "i see! what do you like to do on readium?",
+      "cool! have you checked out the october event yet?",
+      "nice! what's your favorite game here?"
     ];
-    return defaults[Math.floor(Math.random() * defaults.length)];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
   document.getElementById("apps-back-btn").onclick = goHome;
   document.getElementById("apps-suggest-btn").onclick = function () { requireAuth(enterSuggest); };
