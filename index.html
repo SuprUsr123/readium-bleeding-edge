@@ -472,8 +472,19 @@
   <button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button>
   <button id="apps-log-btn" class="secondary">changelog</button>
   <button id="apps-settings-btn" class="secondary">settings</button>
+  <button id="apps-muse-btn" class="secondary hidden">muse assistant</button>
   <button id="apps-fullscreen-btn" class="secondary">full screen</button>
   <button id="apps-back-btn" class="secondary">back</button>
+</div>
+
+<!-- MUSE ASSISTANT -->
+<div id="muse-screen" class="hidden">
+  <h1>muse assistant</h1>
+  <p style="font-size: 0.9em; opacity: 0.8;">tell me what to change and i'll do it</p>
+  <div id="muse-history" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 8px; margin: 8px 0; text-align: left;"></div>
+  <input id="muse-input" type="text" placeholder="type a command..." style="width: 70%;">
+  <button id="muse-send-btn">send</button>
+  <button id="muse-back-btn" class="secondary">back</button>
 </div>
 
 <!-- SIGN IN POPUP -->
@@ -1363,7 +1374,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "critter-screen", "alc-screen", "gametitle-screen", "event-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "critter-screen", "alc-screen", "gametitle-screen", "event-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -8098,7 +8109,65 @@ function flairName(name, rec) {
       })(data[pid]);
     });
   }
-  document.getElementById("home-apps-btn").onclick = function () { showScreen("apps-screen"); };
+  document.getElementById("home-apps-btn").onclick = function () { showScreen("apps-screen"); updateMuseBtn(); };
+
+  /* ---------- muse assistant (founder only) ---------- */
+  function updateMuseBtn() {
+    var btn = document.getElementById("apps-muse-btn");
+    if (btn) { btn.classList.toggle("hidden", !isFounder); }
+  }
+  document.getElementById("apps-muse-btn").onclick = function () { enterMuse(); };
+  document.getElementById("muse-back-btn").onclick = function () { showScreen("apps-screen"); };
+  document.getElementById("muse-send-btn").onclick = sendMuseCmd;
+  document.getElementById("muse-input").onkeypress = function (e) {
+    if (e.key === "Enter") { sendMuseCmd(); }
+  };
+  function enterMuse() {
+    showScreen("muse-screen");
+    loadMuseHistory();
+  }
+  function sendMuseCmd() {
+    var input = document.getElementById("muse-input");
+    var text = input.value.trim();
+    if (!text) { return; }
+    var uid = myUid();
+    if (!uid) { return; }
+    var cmd = { text: text, at: Date.now(), status: "pending", by: displayName() };
+    db.ref("museCmds").push(cmd, function (err) {
+      if (!err) {
+        input.value = "";
+        loadMuseHistory();
+      } else {
+        alert("Failed: " + (err.code || err.message));
+      }
+    });
+  }
+  function loadMuseHistory() {
+    var box = document.getElementById("muse-history");
+    if (!box) { return; }
+    db.ref("museCmds").orderByChild("at").limitToLast(20).once("value", function (snap) {
+      box.innerHTML = "";
+      var v = snap.val() || {};
+      var keys = Object.keys(v).sort(function (a, b) { return (v[a].at || 0) - (v[b].at || 0); });
+      if (!keys.length) { box.innerHTML = "<p>no commands yet</p>"; return; }
+      keys.forEach(function (k) {
+        var c = v[k];
+        var d = document.createElement("div");
+        d.style.marginBottom = "8px";
+        d.style.padding = "6px";
+        d.style.borderBottom = "1px solid #eee";
+        var statusColor = c.status === "done" ? "green" : (c.status === "failed" ? "red" : "orange");
+        d.innerHTML = "<b>" + escapeHtml(c.by || "you") + ":</b> " + escapeHtml(c.text || "") +
+          "<br><span style='color:" + statusColor + ";font-size:0.85em;'>" + escapeHtml(c.status || "pending") + "</span>" +
+          (c.result ? "<br><span style='font-size:0.9em;'>" + escapeHtml(c.result) + "</span>" : "");
+        box.appendChild(d);
+      });
+      box.scrollTop = box.scrollHeight;
+    });
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
   document.getElementById("apps-back-btn").onclick = goHome;
   document.getElementById("apps-suggest-btn").onclick = function () { requireAuth(enterSuggest); };
   document.getElementById("apps-store-btn").onclick = function () { requireAuth(enterStore); };
