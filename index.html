@@ -479,8 +479,8 @@
 <div id="donate-screen" class="hidden">
   <h1>donate</h1>
   <p>Support Readium! Donations help keep the site running.</p>
-  <p style="font-size:16px">Tap below to donate via Stripe (secure checkout).</p>
-  <button id="donate-btn">donate via Stripe</button>
+  <p style="font-size:16px">Tap below to support Readium on Ko-fi.</p>
+  <button id="donate-btn">donate via Ko-fi</button>
   <p id="donate-msg" style="font-size:16px"></p>
   <button id="donate-back-btn" class="secondary">back</button>
 </div>
@@ -8803,7 +8803,7 @@ function flairName(name, rec) {
   }
   document.getElementById("home-apps-btn").onclick = function () { showScreen("apps-screen"); updateMuseBtn(); };
   // donate
-  var DONATE_URL = ""; // Mia: paste your Stripe Payment Link here
+  var DONATE_URL = "https://ko-fi.com/readium";
   document.getElementById("apps-donate-btn").onclick = function () { showScreen("donate-screen"); };
   document.getElementById("donate-back-btn").onclick = function () { showScreen("apps-screen"); };
   document.getElementById("donate-btn").onclick = function () {
