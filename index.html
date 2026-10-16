@@ -472,19 +472,30 @@
   <button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button>
   <button id="apps-log-btn" class="secondary">changelog</button>
   <button id="apps-settings-btn" class="secondary">settings</button>
-  <button id="apps-muse-btn" class="secondary hidden">muse assistant</button>
+  <button id="apps-muse-btn" class="secondary hidden">muse</button>
+  <button id="apps-chatbot-btn" class="secondary">assistant</button>
   <button id="apps-fullscreen-btn" class="secondary">full screen</button>
   <button id="apps-back-btn" class="secondary">back</button>
 </div>
 
 <!-- MUSE ASSISTANT -->
 <div id="muse-screen" class="hidden">
-  <h1>muse assistant</h1>
+  <h1>muse</h1>
   <p style="font-size: 0.9em; opacity: 0.8;">tell me what to change and i'll do it</p>
   <div id="muse-history" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 8px; margin: 8px 0; text-align: left;"></div>
   <input id="muse-input" type="text" placeholder="type a command..." style="width: 70%;">
   <button id="muse-send-btn">send</button>
   <button id="muse-back-btn" class="secondary">back</button>
+</div>
+
+<!-- CHATBOT (for everyone) -->
+<div id="chatbot-screen" class="hidden">
+  <h1>assistant</h1>
+  <p style="font-size: 0.9em; opacity: 0.8;">say hi!</p>
+  <div id="chatbot-history" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 8px; margin: 8px 0; text-align: left;"></div>
+  <input id="chatbot-input" type="text" placeholder="say something..." style="width: 70%;">
+  <button id="chatbot-send-btn">send</button>
+  <button id="chatbot-back-btn" class="secondary">back</button>
 </div>
 
 <!-- SIGN IN POPUP -->
@@ -1374,7 +1385,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "critter-screen", "alc-screen", "gametitle-screen", "event-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gametitle-screen", "event-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -8167,6 +8178,93 @@ function flairName(name, rec) {
   }
   function escapeHtml(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  /* ---------- chatbot (for everyone) ---------- */
+  document.getElementById("apps-chatbot-btn").onclick = function () { enterChatbot(); };
+  document.getElementById("chatbot-back-btn").onclick = function () { showScreen("apps-screen"); };
+  document.getElementById("chatbot-send-btn").onclick = sendChatbotMsg;
+  document.getElementById("chatbot-input").onkeypress = function (e) {
+    if (e.key === "Enter") { sendChatbotMsg(); }
+  };
+  function enterChatbot() {
+    showScreen("chatbot-screen");
+    var box = document.getElementById("chatbot-history");
+    if (box && !box.innerHTML) {
+      addChatbotMsg("bot", "hey! i'm the readium assistant. ask me about the app, games, or just chat!");
+    }
+  }
+  function addChatbotMsg(who, text) {
+    var box = document.getElementById("chatbot-history");
+    if (!box) { return; }
+    var d = document.createElement("div");
+    d.style.marginBottom = "8px";
+    d.style.padding = "6px";
+    if (who === "bot") {
+      d.style.background = "#f0f0f0";
+      d.style.borderRadius = "8px";
+      d.innerHTML = "<b>bot:</b> " + escapeHtml(text);
+    } else {
+      d.style.textAlign = "right";
+      d.innerHTML = "<b>you:</b> " + escapeHtml(text);
+    }
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+  }
+  function sendChatbotMsg() {
+    var input = document.getElementById("chatbot-input");
+    var text = input.value.trim();
+    if (!text) { return; }
+    addChatbotMsg("you", text);
+    input.value = "";
+    setTimeout(function () {
+      addChatbotMsg("bot", chatbotReply(text));
+    }, 500);
+  }
+  function chatbotReply(text) {
+    var t = text.toLowerCase();
+    if (/\b(hi|hello|hey|yo|sup)\b/.test(t)) {
+      return "hey! what's up?";
+    }
+    if (t.indexOf("game") !== -1) {
+      return "we've got 9 games! tic-tac-toe, connect four, chess, pictionary, life sim, zaya's game of life, solitaire, critter catch, and alchemy. which one do you like?";
+    }
+    if (t.indexOf("event") !== -1 || t.indexOf("halloween") !== -1 || t.indexOf("october") !== -1) {
+      return "the october event is live! knock on doors to get candy and join a team - pumpkin, black cat, ghost, or bat!";
+    }
+    if (t.indexOf("xp") !== -1) {
+      return "you get xp for chatting, playing games, and being active! check the leaderboard to see who's on top.";
+    }
+    if (t.indexOf("dm") !== -1 || t.indexOf("message") !== -1) {
+      return "you can dm people from the messages screen! search for someone and send them a request.";
+    }
+    if (t.indexOf("chickn") !== -1) {
+      return "chickn is the founder of readium! she's awesome.";
+    }
+    if (t.indexOf("joke") !== -1) {
+      var jokes = [
+        "why don't scientists trust atoms? because they make up everything!",
+        "what do you call fake spaghetti? an impasta!",
+        "why did the scarecrow win an award? because he was outstanding in his field!"
+      ];
+      return jokes[Math.floor(Math.random() * jokes.length)];
+    }
+    if (t.indexOf("bye") !== -1) {
+      return "bye! come back soon!";
+    }
+    if (t.indexOf("thank") !== -1) {
+      return "you're welcome!";
+    }
+    if (t.indexOf("?") !== -1) {
+      return "hmm, i'm just a simple bot! try asking about games, events, xp, or dms. or say 'joke' for a laugh!";
+    }
+    var defaults = [
+      "cool! tell me more.",
+      "interesting! what else?",
+      "nice! i like chatting with you.",
+      "oh yeah? go on!"
+    ];
+    return defaults[Math.floor(Math.random() * defaults.length)];
   }
   document.getElementById("apps-back-btn").onclick = goHome;
   document.getElementById("apps-suggest-btn").onclick = function () { requireAuth(enterSuggest); };
