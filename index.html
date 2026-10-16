@@ -886,6 +886,8 @@
   <h1>changelog</h1>
   <div id="log-entries">
     <h2>oct 16, 2026</h2>
+    <p><b>poll comments</b> — you can now comment under polls! tap "comments" on any poll.</p>
+    <p><b>most wins boards</b> — every game with wins (tic tac toe, connect four, chess, solitaire, critter catch, pictionary) now shows a "most wins" leaderboard under the game!</p>
     <p><b>notifications fixed</b> — popups now appear wherever you are for new DM requests, new DM messages, mentions, and replies. tap one to jump right there!</p>
     <p><b>play your luck fixed</b> — the game opens again (it was crashing on start).</p>
     <p><b>october event leaderboard fixed</b> — the top candy collectors board loads again.</p>
@@ -975,6 +977,7 @@
 <div id="critter-screen" class="hidden">
   <h1>critter catch <button class="mini secondary game-help-btn" data-help="catch wild critters! explore to find them, weaken them in battle, then throw a trap. fire beats leaf, water beats fire, leaf beats water, spark beats water, shadow beats spark!">?</button></h1>
   <div id="critter-main"></div>
+  <div id="winboard-critter" style="margin-top:14px"></div>
   <button id="critter-back-btn" class="secondary">back</button>
 </div>
 
@@ -988,6 +991,7 @@
     <button id="sol-new-btn">new game</button>
     <button id="sol-back-btn" class="secondary">back</button>
   </div>
+  <div id="winboard-sol" style="margin-top:14px"></div>
 </div>
 
 <!-- GAME OF LIFE -->
@@ -1052,6 +1056,7 @@
   <h1 id="ttt-title">tic tac toe</h1> <button class="mini secondary game-help-btn" data-help="tic tac toe: get 3 in a row to win! you are X.">?</button>
   <p id="ttt-status"></p>
   <div id="ttt-board"></div>
+  <div id="winboard-ttt" style="margin-top:14px"></div>
   <button id="ttt-rematch-btn" class="hidden">rematch</button>
   <button id="ttt-leave-btn" class="secondary">quit</button>
   <button id="ttt-home-btn" class="secondary">home</button>
@@ -1062,6 +1067,7 @@
   <h1 id="c4-title">connect four</h1> <button class="mini secondary game-help-btn" data-help="connect four: drop checkers, connect 4 in a row to win!">?</button>
   <p id="c4-status"></p>
   <div id="c4-board"></div>
+  <div id="winboard-c4" style="margin-top:14px"></div>
   <button id="c4-rematch-btn" class="hidden">rematch</button>
   <button id="c4-leave-btn" class="secondary">quit</button>
   <button id="c4-home-btn" class="secondary">home</button>
@@ -1073,6 +1079,7 @@
   <p id="chess-status"></p>
   <div id="chess-board"></div>
   <div id="chess-captured"></div>
+  <div id="winboard-chess" style="margin-top:14px"></div>
   <button id="chess-rematch-btn" class="hidden">rematch</button>
   <button id="chess-leave-btn" class="secondary">quit</button>
   <button id="chess-home-btn" class="secondary">home</button>
@@ -1096,6 +1103,7 @@
   </div>
   <div id="pic-scores"></div>
   <p id="pic-timer"></p>
+  <div id="winboard-pic" style="margin-top:14px"></div>
   <button id="pic-leave-btn" class="secondary">leave</button>
   <button id="pic-home-btn" class="secondary">home</button>
 </div>
@@ -1452,6 +1460,11 @@
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
     }
     try { window.scrollTo(0, 0); } catch (e) {}
+    // refresh the "most wins" board when a game screen opens
+    try {
+      var wbGames = { "ttt-screen": "ttt", "c4-screen": "c4", "chess-screen": "chess", "sol-screen": "sol", "critter-screen": "critter", "pic-screen": "pic" };
+      if (wbGames[id]) { loadWinBoard(wbGames[id]); }
+    } catch (e3) {}
     try {
       var h = (id === "home-screen") ? "#home" : "#" + id;
       if (window.location.hash !== h) { window.location.hash = h; }
@@ -4091,7 +4104,7 @@
   function renderBot() {
     var w = checkWin(botBoard);
     var st = document.getElementById("ttt-status");
-    if (w === "X") { st.textContent = "you win! +10 xp"; gameOver = true; xpWinOnce(); }
+    if (w === "X") { st.textContent = "you win! +10 xp"; gameOver = true; xpWinOnce("ttt"); }
     else if (w === "O") { st.textContent = "bot wins!"; gameOver = true; }
     else if (w === "draw") { st.textContent = "draw!"; gameOver = true; }
     else if (botThinking) { st.textContent = "bot is thinking..."; }
@@ -4615,7 +4628,7 @@
     for (var f = 0; f < 4; f++) { if (solFound[f].length !== 13) { won = false; } }
     if (won) {
       document.getElementById("sol-msg").textContent = "you win! +10 xp";
-      xpWinOnce();
+      xpWinOnce("sol");
     }
     solRender();
   }
@@ -4713,7 +4726,7 @@
       gameOver = true;
       if (!L.winner) { gameXpGiven = false; }
       if (L.winner === "draw") { st.textContent = "it's a draw!"; }
-      else if (L.winner === me) { st.textContent = "you win! +10 xp"; xpWinOnce(); }
+      else if (L.winner === me) { st.textContent = "you win! +10 xp"; xpWinOnce("ttt"); }
       else { st.textContent = (L.winnerName || "opponent") + " wins!"; }
       drawBoard(board, false, null);
       document.getElementById("ttt-rematch-btn").className = "";
@@ -4863,7 +4876,7 @@
   function renderC4Bot() {
     var w = c4Winner(c4Board);
     var st = document.getElementById("c4-status");
-    if (w === "X") { st.textContent = "you win! +10 xp"; c4Over = true; xpWinOnce(); }
+    if (w === "X") { st.textContent = "you win! +10 xp"; c4Over = true; xpWinOnce("c4"); }
     else if (w === "O") { st.textContent = "bot wins!"; c4Over = true; }
     else if (w === "draw") { st.textContent = "draw!"; c4Over = true; }
     else if (c4Thinking) { st.textContent = "bot is thinking..."; }
@@ -4944,7 +4957,7 @@
       c4Over = true;
       if (!L.winner) { gameXpGiven = false; }
       if (L.winner === "draw") { st.textContent = "it's a draw!"; }
-      else if (L.winner === me) { st.textContent = "you win! +10 xp"; xpWinOnce(); }
+      else if (L.winner === me) { st.textContent = "you win! +10 xp"; xpWinOnce("c4"); }
       else { st.textContent = (L.winnerName || "opponent") + " wins!"; }
       drawC4(board, false, null);
       document.getElementById("c4-rematch-btn").className = "";
@@ -5409,7 +5422,7 @@ function chessDoMove(mv) {
     renderChess(); updateChessStatus();
     var stt = chessStatus(chessState);
     if (stt.over) {
-      if (stt.result === "w") { xpWinOnce(); }
+      if (stt.result === "w") { xpWinOnce("chess"); }
       return;
     }
     chessThinking = true;
@@ -5511,7 +5524,7 @@ function renderChessNet(L) {
     else {
       var iWon = (stt.result === chessMyColor);
       el.textContent = iWon ? "you win! +10 xp" : "you lose.";
-      if (iWon) { xpWinOnce(); }
+      if (iWon) { xpWinOnce("chess"); }
     }
     document.getElementById("chess-rematch-btn").className = "";
   }
@@ -5780,7 +5793,7 @@ function renderPicNet(L) {
   }
   if (L.status === "done") {
     status.textContent = (L.winner === me) ? "you win! +10 xp" : ((L.winnerName || "someone") + " wins!");
-    if (L.winner === me) { xpWinOnce(); }
+    if (L.winner === me) { xpWinOnce("pic"); }
     picRenderStrokes(st.strokes);
     return;
   }
@@ -5928,10 +5941,49 @@ function grantXp(n, key, cooldownMs) {
   try { localStorage.setItem(k, String(Date.now())); } catch (e2) {}
   changeXp(u.uid, n * xpBoostMult());
 }
-function xpWinOnce() {
+function xpWinOnce(game) {
   if (gameXpGiven) { return; }
   gameXpGiven = true;
   grantXp(10, "gamewin", 30000);
+  // record the win for this game's "most wins" board
+  if (game && auth.currentUser) {
+    try {
+      var nm = displayName();
+      db.ref("gameWins/" + game + "/" + auth.currentUser.uid).transaction(function (cur) {
+        var c = (cur && typeof cur.count === "number") ? cur.count : 0;
+        return { name: nm, count: c + 1 };
+      });
+    } catch (e) {}
+  }
+}
+var WINBOARD_TITLES = { ttt: "tic tac toe", c4: "connect four", chess: "chess", sol: "solitaire", critter: "critter catch", pic: "pictionary" };
+function loadWinBoard(game) {
+  var box = document.getElementById("winboard-" + game);
+  if (!box) { return; }
+  box.innerHTML = "<p>loading...</p>";
+  db.ref("gameWins/" + game).once("value", function (snap) {
+    var v = snap.val() || {};
+    var rows = [];
+    for (var uid in v) {
+      if (!v.hasOwnProperty(uid)) { continue; }
+      var r = v[uid] || {};
+      if (r.count > 0) { rows.push({ uid: uid, name: r.name || "someone", count: r.count }); }
+    }
+    rows.sort(function (a, b) { return b.count - a.count; });
+    rows = rows.slice(0, 10);
+    box.innerHTML = "";
+    var h = document.createElement("h2");
+    h.textContent = "most wins \u2014 " + (WINBOARD_TITLES[game] || game);
+    box.appendChild(h);
+    if (!rows.length) { box.innerHTML += "<p>nobody has won yet \u2014 be the first!</p>"; return; }
+    var me = myUid();
+    for (var i = 0; i < rows.length; i++) {
+      var p = document.createElement("p");
+      p.textContent = (i + 1) + ". " + rows[i].name + " \u2014 " + rows[i].count + " win" + (rows[i].count === 1 ? "" : "s");
+      if (rows[i].uid === me) { p.style.fontWeight = "bold"; }
+      box.appendChild(p);
+    }
+  }, function (err) { box.innerHTML = "<p>could not load.</p>"; });
 }
 function watchXp() {
   var u = auth.currentUser;
@@ -8450,7 +8502,7 @@ function flairName(name, rec) {
       mine.atk = Math.round(mine.atk * 1.08);
       critterStore();
       b.msg = "wild " + wild.name + " fainted! " + mine.name + " grew to Lv" + mine.lvl + "! +" + xpGain + " xp";
-      xpWinOnce();
+      xpWinOnce("critter");
       // heal a bit
       setTimeout(function () { critterBattle = null; critterRender(); }, 1500);
       critterRender();
@@ -8540,6 +8592,7 @@ function flairName(name, rec) {
 
   /* ---------- polls ---------- */
   var pollRef = null;
+  var pollCommentsRefs = {};
   function enterPolls() {
     showScreen("poll-screen");
     document.getElementById("poll-msg").textContent = "";
@@ -8633,10 +8686,110 @@ function flairName(name, rec) {
           meta.style.fontSize = "14px"; meta.style.color = "#555555";
           meta.textContent = total + " vote" + (total === 1 ? "" : "s");
           wrap.appendChild(meta);
+          // comments under each poll
+          (function (pollId) {
+            var cbtn = document.createElement("button");
+            cbtn.className = "mini secondary";
+            cbtn.textContent = "comments";
+            cbtn._pollId = pollId;
+            var cdiv = document.createElement("div");
+            cdiv.className = "hidden";
+            var expanded = false;
+            db.ref("pollComments/" + pollId).once("value", function (csnap) {
+              var cc = csnap.val(), n = cc ? Object.keys(cc).length : 0;
+              cbtn.textContent = "comments (" + n + ")";
+            });
+            cbtn.onclick = function () {
+              expanded = !expanded;
+              cdiv.className = expanded ? "" : "hidden";
+              if (expanded) { loadPollComments(pollId); }
+              else if (pollCommentsRefs[pollId]) { pollCommentsRefs[pollId].off(); delete pollCommentsRefs[pollId]; }
+            };
+            wrap.appendChild(cbtn);
+            wrap.appendChild(cdiv);
+          })(pid);
         });
         box.appendChild(wrap);
       })(data[pid]);
     });
+  }
+  function loadPollComments(pid) {
+    if (pollCommentsRefs[pid]) { pollCommentsRefs[pid].off(); }
+    var ref = db.ref("pollComments/" + pid).orderByChild("at").limitToLast(10);
+    pollCommentsRefs[pid] = ref;
+    ref.on("value", function (snap) { renderPollComments(pid, snap.val()); });
+  }
+  function renderPollComments(pid, data) {
+    // the comments div sits right after this poll's comments button
+    var list = document.getElementById("poll-list");
+    var box = null;
+    var btns = list.getElementsByTagName("button");
+    for (var i = 0; i < btns.length; i++) {
+      if (btns[i]._pollId === pid) { box = btns[i].nextSibling; break; }
+    }
+    if (!box) { return; }
+    box.innerHTML = "";
+    var keys = data ? Object.keys(data) : [];
+    keys.sort(function (a, b) { return (data[a].at || 0) - (data[b].at || 0); });
+    if (!keys.length) {
+      var np = document.createElement("p");
+      np.style.fontSize = "14px"; np.style.color = "#555555";
+      np.textContent = "no comments yet \u2014 say something!";
+      box.appendChild(np);
+    }
+    for (var j = 0; j < keys.length; j++) {
+      (function (k) {
+        var c = data[k] || {};
+        var d = document.createElement("div");
+        d.style.cssText = "font-size:16px;border-top:1px solid #999999;padding:6px 0;";
+        if (c.uid) {
+          var cpi = pfpImg(null, 1);
+          cpi.style.verticalAlign = "middle"; cpi.style.marginRight = "6px";
+          fillPfpImg(cpi, c.uid);
+          d.appendChild(cpi);
+        }
+        var nm = document.createElement("b");
+        nm.textContent = censor(c.name || "Reader") + ": ";
+        var tx = document.createElement("span");
+        tx.textContent = censor(c.text || "");
+        d.appendChild(nm);
+        d.appendChild(tx);
+        if (auth.currentUser && (isMod || c.uid === myUid())) {
+          var del = document.createElement("button");
+          del.className = "mini secondary";
+          del.textContent = "delete";
+          del.onclick = function () { db.ref("pollComments/" + pid + "/" + k).remove(); };
+          d.appendChild(del);
+        }
+        box.appendChild(d);
+      })(keys[j]);
+    }
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.maxLength = 300;
+    inp.placeholder = "add a comment...";
+    inp.style.marginTop = "6px";
+    var btn = document.createElement("button");
+    btn.className = "mini";
+    btn.textContent = "comment";
+    btn.onclick = function () {
+      var t = inp.value.replace(/^\s+|\s+$/g, "");
+      if (!t || !auth.currentUser) { return; }
+      var me = myUid();
+      db.ref("bans/" + me).once("value", function (snap) {
+        if (hoodBanActive(snap.val())) { return; }
+        if (!isMod && filterHit(t)) { return; }
+        db.ref("pollComments/" + pid).push(
+          { name: displayName(), uid: me, text: isMod ? t : censor(t), at: Date.now() },
+          function (err) {
+            inp.value = "";
+            if (!err) { grantXp(2, "comment", 30000); }
+          }
+        );
+      });
+    };
+    box.appendChild(inp);
+    box.appendChild(btn);
   }
   document.getElementById("home-apps-btn").onclick = function () { showScreen("apps-screen"); updateMuseBtn(); };
 
