@@ -2273,14 +2273,22 @@
       if (++got === need) { renderDashStats(out); }
     }
     db.ref("users").once("value", function (s) {
-      var v = s.val() || {}, total = 0, banned = 0;
-      for (var k in v) {
-        total++;
-        if (v[k] && (v[k].banned || (v[k].banUntil && v[k].banUntil > Date.now()))) { banned++; }
-      }
-      each("users", total + " (" + banned + " banned)");
+      var v = s.val() || {}, total = 0;
+      for (var k in v) { total++; }
+      // get banned count from the bans node (not user records)
+      db.ref("bans").once("value", function (bs) {
+        var banned = bs.numChildren();
+        each("users", total + " (" + banned + " banned)");
+      });
     });
-    db.ref("presence").once("value", function (s) { each("online", s.numChildren()); });
+    db.ref("presence").once("value", function (s) {
+      var v = s.val() || {}, online = 0, now = Date.now();
+      for (var k in v) {
+        // only count if active in last 5 minutes (filter stale)
+        if (v[k] && v[k].at && (now - v[k].at) < 5 * 60 * 1000) { online++; }
+      }
+      each("online", online);
+    });
     db.ref("roomList").once("value", function (s) { each("rooms", s.numChildren()); });
     db.ref("hoodPosts").once("value", function (s) { each("posts", s.numChildren()); });
     db.ref("suggestions").once("value", function (s) {
