@@ -313,6 +313,7 @@
   body.bigfont { zoom: 1.3; }
   body.bigfont button { font-size: 1.1em; }
   body.bigfont input, body.bigfont textarea { font-size: 1.1em; }
+  body.smallfont { zoom: 0.8; }
   #messages p, .hood-post-text, .suggest-text { white-space: pre-wrap; word-wrap: break-word; }
   .c4-cell {
     width: 44px;
@@ -787,6 +788,7 @@
   <button id="set-sec-text" class="secondary section-head">text size +</button>
   <div id="set-body-text" class="hidden section-body">
     <p style="font-size:16px">Make everything bigger — easier on Kindle.</p>
+    <button id="font-small-btn" class="secondary">small text</button>
     <button id="font-normal-btn" class="secondary">normal text</button>
     <button id="font-large-btn" class="secondary">large text</button>
   </div>
@@ -4049,25 +4051,32 @@
   };
   applyTheme();
   function applyFontSize() {
-    var big = false;
-    try { big = localStorage.getItem("readium_bigfont") === "1"; } catch (e) {}
+    var size = "normal";
+    try { size = localStorage.getItem("readium_fontsize") || "normal"; } catch (e) {}
     try {
-      if (big) { document.body.classList.add("bigfont"); }
-      else { document.body.classList.remove("bigfont"); }
-      // fallback for old browsers
-      document.body.style.zoom = big ? "1.25" : "1";
+      document.body.classList.remove("bigfont");
+      document.body.classList.remove("smallfont");
+      if (size === "large") { document.body.classList.add("bigfont"); }
+      else if (size === "small") { document.body.classList.add("smallfont"); }
+      document.body.style.zoom = size === "large" ? "1.3" : (size === "small" ? "0.8" : "1");
     } catch (e2) {}
+    var sb = document.getElementById("font-small-btn");
     var nb = document.getElementById("font-normal-btn");
     var lb = document.getElementById("font-large-btn");
-    if (nb) { nb.textContent = big ? "normal text" : "normal text \u2713"; }
-    if (lb) { lb.textContent = big ? "large text \u2713" : "large text"; }
+    if (sb) { sb.textContent = size === "small" ? "small text \u2713" : "small text"; }
+    if (nb) { nb.textContent = size === "normal" ? "normal text \u2713" : "normal text"; }
+    if (lb) { lb.textContent = size === "large" ? "large text \u2713" : "large text"; }
   }
+  document.getElementById("font-small-btn").onclick = function () {
+    try { localStorage.setItem("readium_fontsize", "small"); } catch (e) {}
+    applyFontSize();
+  };
   document.getElementById("font-normal-btn").onclick = function () {
-    try { localStorage.setItem("readium_bigfont", "0"); } catch (e) {}
+    try { localStorage.setItem("readium_fontsize", "normal"); } catch (e) {}
     applyFontSize();
   };
   document.getElementById("font-large-btn").onclick = function () {
-    try { localStorage.setItem("readium_bigfont", "1"); } catch (e) {}
+    try { localStorage.setItem("readium_fontsize", "large"); } catch (e) {}
     applyFontSize();
   };
   applyFontSize();
