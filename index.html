@@ -672,7 +672,10 @@
 <!-- JOIN ROOM -->
 <div id="join-screen" class="hidden">
   <h1>join a room</h1>
+  <h2>starred rooms</h2>
+  <div id="starred-rooms"><p>no starred rooms yet</p></div>
   <h2>public rooms</h2>
+  <input id="room-search" type="text" maxlength="30" placeholder="search rooms..." autocomplete="off" style="width:90%;margin-bottom:8px">
   <div id="public-rooms"><p>loading...</p></div>
   <h2>private room</h2>
   <input id="private-input" type="text" maxlength="20" placeholder="exact room name..." autocomplete="off">
@@ -825,6 +828,7 @@
 <div id="chat-screen" class="hidden">
   <h1 id="chat-title">room</h1>
   <button id="dm-report-btn" class="mini secondary hidden" style="margin-bottom:8px">report this DM</button>
+  <button id="star-room-btn" class="mini secondary hidden" style="margin-bottom:8px">star this room</button>
   <div id="pins-box"></div>
   <div id="messages"></div>
   <button id="latest-btn" class="mini secondary hidden">jump to latest</button>
@@ -2140,22 +2144,61 @@
   document.getElementById("create-public-btn").onclick = function () { createRoom(true); };
   document.getElementById("create-private-btn").onclick = function () { createRoom(false); };
 
-  /* ---------- join room ---------- */
-  function enterJoin() {
-    showScreen("join-screen");
-    showJoinError("");
-    if (roomListRef) { roomListRef.off(); }
-    roomListRef = db.ref("roomList");
-    roomListRef.on("value", function (snap) { renderRoomList(snap.val()); });
+  /* ---------- starred rooms ---------- */
+  function getStarred() {
+    try { return JSON.parse(localStorage.getItem("starredRooms") || "[]"); }
+    catch (e) { return []; }
   }
-  function renderRoomList(data) {
+  function saveStarred(list) {
+    try { localStorage.setItem("starredRooms", JSON.stringify(list)); } catch (e) {}
+  }
+  function isStarred(roomId) { return getStarred().indexOf(roomId) !== -1; }
+  function toggleStar(roomId) {
+    var list = getStarred();
+    var i = list.indexOf(roomId);
+    if (i === -1) { list.push(roomId); } else { list.splice(i, 1); }
+    saveStarred(list);
+    renderStarred();
+    updateStarBtn();
+  }
+  function renderStarred() {
+    var box = document.getElementById("starred-rooms");
+    var list = getStarred();
+    box.innerHTML = "";
+    if (!list.length) { box.innerHTML = "<p>no starred rooms yet</p>"; return; }
+    list.sort();
+    for (var i = 0; i < list.length; i++) {
+      (function (id) {
+        var b = document.createElement("button");
+        b.className = "room-btn";
+        b.textContent = "\u2605 " + id;
+        b.onclick = function () { openChat("rooms/" + id + "/messages", "room: " + id, "msgs"); };
+        box.appendChild(b);
+      })(list[i]);
+    }
+  }
+  function updateStarBtn() {
+    var btn = document.getElementById("star-room-btn");
+    var refPath = currentRefPath || "";
+    // only show for named rooms (not DMs, not main)
+    if (refPath.indexOf("rooms/") === 0) {
+      var roomId = refPath.split("/")[1];
+      if (roomId && roomId !== "general") {
+        btn.className = "mini secondary";
+        btn.textContent = isStarred(roomId) ? "unstar this room" : "star this room";
+        btn.onclick = function () { toggleStar(roomId); };
+        return;
+      }
+    }
+    btn.className = "mini secondary hidden";
+  }
+  var allPublicRooms = [];
+  function filterPublicRooms() {
+    var q = (document.getElementById("room-search").value || "").toLowerCase().trim();
     var box = document.getElementById("public-rooms");
     box.innerHTML = "";
-    var keys = data ? Object.keys(data) : [];
-    if (!keys.length) {
-      box.innerHTML = "<p>No rooms yet — make one!</p>";
-      return;
-    }
+    var keys = allPublicRooms.filter(function (id) { return !q || id.toLowerCase().indexOf(q) !== -1; });
+    if (!keys.length) { box.innerHTML = "<p>no rooms match</p>"; return; }
     keys.sort();
     for (var i = 0; i < keys.length; i++) {
       (function (id) {
@@ -2167,6 +2210,27 @@
       })(keys[i]);
     }
   }
+
+  /* ---------- join room ---------- */
+  function enterJoin() {
+    showScreen("join-screen");
+    showJoinError("");
+    renderStarred();
+    var rs = document.getElementById("room-search");
+    if (rs) { rs.value = ""; }
+    if (roomListRef) { roomListRef.off(); }
+    roomListRef = db.ref("roomList");
+    roomListRef.on("value", function (snap) { renderRoomList(snap.val()); });
+  }
+  function renderRoomList(data) {
+    allPublicRooms = data ? Object.keys(data) : [];
+    if (!allPublicRooms.length) {
+      document.getElementById("public-rooms").innerHTML = "<p>No rooms yet — make one!</p>";
+      return;
+    }
+    filterPublicRooms();
+  }
+  document.getElementById("room-search").oninput = function () { filterPublicRooms(); };
   document.getElementById("join-private-btn").onclick = function () {
     showJoinError("");
     var id = cleanRoomName(document.getElementById("private-input").value);
@@ -3272,6 +3336,7 @@
     var isDmChat = refPath.indexOf("dms/") === 0;
     document.getElementById("dm-report-btn").className = isDmChat ? "mini secondary" : "mini secondary hidden";
     currentChatTitle = title;
+    updateStarBtn();
     if (refPath.indexOf("rooms/") === 0) { currentConvoKey = "r_" + refPath.split("/")[1]; }
     else if (refPath.indexOf("dms/") === 0) { currentConvoKey = "d_" + refPath.split("/")[1]; }
     else { currentConvoKey = "x"; }
