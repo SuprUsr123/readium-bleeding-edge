@@ -704,6 +704,7 @@
   <h2>give xp</h2>
   <input id="dash-xp-user" type="text" maxlength="20" placeholder="username...">
   <input id="dash-xp-amt" type="number" min="1" max="100000" placeholder="amount">
+  <input id="dash-xp-reason" type="text" maxlength="120" placeholder="reason (shown to them)...">
   <button id="dash-xp-btn" class="secondary">grant xp</button>
   <button id="dash-xp-take-btn" class="secondary">take away xp</button>
   <h2>reports</h2>
@@ -2303,17 +2304,28 @@
   function dashGrantXp() {
     var nameEl = document.getElementById("dash-xp-user");
     var amtEl = document.getElementById("dash-xp-amt");
+    var reasonEl = document.getElementById("dash-xp-reason");
     var name = String(nameEl.value || "").trim().toLowerCase();
     var amt = parseInt(amtEl.value, 10);
+    var reason = String(reasonEl.value || "").trim().substring(0, 120);
     if (!name) { nameEl.focus(); return; }
     if (!(amt > 0) || amt > 100000) { amtEl.focus(); return; }
     db.ref("users").orderByChild("name").equalTo(name).once("value", function (snap) {
       if (!snap.exists()) { flashNotice("user not found"); return; }
       var uid = Object.keys(snap.val())[0];
-      askConfirm("Give " + amt + " XP to " + name + "?", function () {
+      var confirmMsg = "Give " + amt + " XP to " + name + "?" + (reason ? "\nReason: " + reason : "");
+      askConfirm(confirmMsg, function () {
         changeXp(uid, amt);
+        // save the grant with reason so they see a popup
+        db.ref("xpGrants/" + uid).push({
+          amt: amt,
+          reason: reason || "",
+          by: displayName(),
+          at: Date.now(),
+          seen: false
+        });
         flashNotice("granted " + amt + " xp to " + name);
-        nameEl.value = ""; amtEl.value = "";
+        nameEl.value = ""; amtEl.value = ""; reasonEl.value = "";
       });
     });
   }
@@ -8999,6 +9011,35 @@ function flairName(name, rec) {
   })();
 
 /* ---------- auth state ---------- */
+  function checkXpGrants() {
+    var uid = myUid();
+    if (!uid) { return; }
+    db.ref("xpGrants/" + uid).orderByChild("seen").equalTo(false).once("value", function (snap) {
+      if (!snap.exists()) { return; }
+      var grants = snap.val();
+      var keys = Object.keys(grants);
+      // show popup for each unseen grant
+      keys.forEach(function (k) {
+        var g = grants[k];
+        var msg = "+" + (g.amt || 0) + " XP from " + (g.by || "a mod");
+        if (g.reason) { msg += "\nReason: " + g.reason; }
+        // use notify for the popup
+        notify("you got XP!", msg, null);
+        // mark as seen
+        db.ref("xpGrants/" + uid + "/" + k + "/seen").set(true);
+      });
+    });
+    // also watch for new grants while online
+    db.ref("xpGrants/" + uid).orderByChild("seen").equalTo(false).on("child_added", function (snap) {
+      var g = snap.val() || {};
+      // skip if already shown (avoid duplicates from the once() above)
+      if (g._shown) { return; }
+      var msg = "+" + (g.amt || 0) + " XP from " + (g.by || "a mod");
+      if (g.reason) { msg += "\nReason: " + g.reason; }
+      notify("you got XP!", msg, null);
+      db.ref("xpGrants/" + uid + "/" + snap.key + "/seen").set(true);
+    });
+  }
   auth.onAuthStateChanged(function (user) {
     refreshHome();
     if (user) {
@@ -9011,6 +9052,7 @@ function flairName(name, rec) {
       watchMentions();
       checkMod();
       startPresence();
+      checkXpGrants();
       closeSignin();
       var startHash = "";
       try { startHash = String(window.location.hash || "").replace("#", ""); } catch (e3) {}
