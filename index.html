@@ -310,6 +310,7 @@
   #ttt-board .cell:disabled { color: #111111; opacity: 1; background: #ffffff; }
   #c4-board { margin-bottom: 12px; text-align: center; }
   .c4-row { white-space: nowrap; }
+  #messages p, .hood-post-text, .suggest-text { white-space: pre-wrap; word-wrap: break-word; }
   .c4-cell {
     width: 44px;
     height: 44px;
@@ -615,7 +616,7 @@
   <h1>neighborhood</h1>
   <div><button id="hood-top-home-btn" class="mini secondary">home</button></div>
   <p style="font-size:16px">one post every 10 minutes. be nice.</p>
-  <input id="hood-input" type="text" maxlength="500" placeholder="share something..." autocomplete="off">
+  <textarea id="hood-input" maxlength="1000" placeholder="share something..." autocomplete="off" rows="2" style="resize:vertical"></textarea>
   <button id="hood-post-btn">post</button>
   <div id="hood-msg"></div>
   <div id="hood-feed"><p>loading...</p></div>
@@ -783,6 +784,11 @@
     <p style="font-size:16px">Show who's online right now in a side panel. It remembers your choice on this device.</p>
     <button id="set-online-toggle" class="secondary">online list: off</button>
   </div>
+  <button id="set-sec-enter" class="secondary section-head">send on enter +</button>
+  <div id="set-body-enter" class="hidden section-body">
+    <p style="font-size:16px">When on, pressing Enter sends your message. When off, Enter makes a new line (use the Send button to send).</p>
+    <button id="set-enter-toggle" class="secondary">send on enter: on</button>
+  </div>
   <button id="set-sec-pins" class="secondary section-head">pin apps +</button>
   <div id="set-body-pins" class="hidden section-body">
     <p style="font-size:16px">Pin apps to your home page for quick access.</p>
@@ -813,7 +819,7 @@
   <div id="typing-ind" style="font-size:15px;color:#555555;min-height:20px"></div>
   <div id="reply-bar" class="hidden"><span id="reply-text"></span><button id="reply-cancel" class="mini secondary">x</button></div>
   <div id="chat-bar">
-    <input id="msg-input" type="text" maxlength="500" placeholder="Type a message... (use @name to mention)" autocomplete="off">
+    <textarea id="msg-input" maxlength="1000" placeholder="Type a message... (use @name to mention)" autocomplete="off" rows="2" style="resize:vertical"></textarea>
     <button id="send-btn">Send</button>
   </div>
   <button id="back-btn" class="secondary">back</button>
@@ -1823,6 +1829,20 @@
   document.getElementById("set-sec-pw").onclick = function () { setSectionToggle("pw", "password"); };
   document.getElementById("set-sec-online").onclick = function () { setSectionToggle("online", "online list"); };
   document.getElementById("set-sec-pins").onclick = function () { setSectionToggle("pins", "pin apps"); renderPinList(); };
+  document.getElementById("set-sec-enter").onclick = function () { setSectionToggle("enter", "send on enter"); };
+  function getSendOnEnter() {
+    try { var v = localStorage.getItem("readium_sendOnEnter"); return v === null ? true : v === "1"; }
+    catch (e) { return true; }
+  }
+  function updateEnterToggle() {
+    var b = document.getElementById("set-enter-toggle");
+    if (b) { b.textContent = "send on enter: " + (getSendOnEnter() ? "on" : "off"); }
+  }
+  document.getElementById("set-enter-toggle").onclick = function () {
+    try { localStorage.setItem("readium_sendOnEnter", getSendOnEnter() ? "0" : "1"); } catch (e) {}
+    updateEnterToggle();
+  };
+  updateEnterToggle();
 
   /* ---------- pin apps to home ---------- */
   var PINNABLE_APPS = [
@@ -3558,7 +3578,10 @@
   }
   document.getElementById("send-btn").onclick = sendMessage;
   document.getElementById("msg-input").onkeydown = function (e) {
-    if (e.keyCode === 13) { sendMessage(); }
+    if (e.keyCode === 13 && !e.shiftKey) {
+      if (getSendOnEnter()) { e.preventDefault(); sendMessage(); }
+      // if send-on-enter is off, let Enter create a new line naturally
+    }
   };
   document.getElementById("msg-input").oninput = function () { pokeTyping(); };
   document.getElementById("password-input").onkeydown = function (e) {
@@ -3822,6 +3845,11 @@
     });
   }
   document.getElementById("hood-post-btn").onclick = hoodPost;
+  document.getElementById("hood-input").onkeydown = function (e) {
+    if (e.keyCode === 13 && !e.shiftKey) {
+      if (getSendOnEnter()) { e.preventDefault(); hoodPost(); }
+    }
+  };
   document.getElementById("hood-home-btn").onclick = goHome;
 
   function applyTheme() {
