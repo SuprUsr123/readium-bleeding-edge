@@ -1031,10 +1031,16 @@
     <button id="gamble-bj-stand" class="secondary hidden">stand</button>
   </div>
   <p id="gamble-bj-msg"></p>
-  <h2>biggest losers</h2>
-  <div id="gamble-losers"><p>loading...</p></div>
-  <h2>biggest winners</h2>
-  <div id="gamble-winners"><p>loading...</p></div>
+  <div style="display:flex;gap:16px;">
+    <div style="flex:1;min-width:0;">
+      <h2>biggest losers</h2>
+      <div id="gamble-losers"><p>loading...</p></div>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <h2>biggest winners</h2>
+      <div id="gamble-winners"><p>loading...</p></div>
+    </div>
+  </div>
   <button id="gamble-back-btn" class="secondary">back</button>
 </div>
 
@@ -9904,11 +9910,8 @@ function flairName(name, rec) {
   function enterPolls() {
     showScreen("poll-screen");
     document.getElementById("poll-msg").textContent = "";
-    // show create form for chickn only
-    db.ref("users/" + myUid() + "/name").once("value", function (snap) {
-      var nm = snap.val();
-      document.getElementById("poll-create").className = (nm === "chickn") ? "" : "hidden";
-    });
+    // everyone can create polls now
+    document.getElementById("poll-create").className = "";
     if (pollRef) { pollRef.off(); }
     pollRef = db.ref("polls").orderByChild("createdAt");
     pollRef.on("value", function (snap) { renderPolls(snap.val()); });
@@ -9942,7 +9945,11 @@ function flairName(name, rec) {
     var box = document.getElementById("poll-list");
     box.innerHTML = "";
     var keys = data ? Object.keys(data) : [];
-    keys.sort(function (a, b) { return (data[b].createdAt || 0) - (data[a].createdAt || 0); });
+    keys.sort(function (a, b) {
+      var pa = data[a].pinned ? 1 : 0, pb = data[b].pinned ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return (data[b].createdAt || 0) - (data[a].createdAt || 0);
+    });
     if (!keys.length) { box.innerHTML = "<p>no polls yet.</p>"; return; }
     var me = myUid();
     keys.forEach(function (pid) {
@@ -9993,7 +10000,23 @@ function flairName(name, rec) {
           var meta = document.createElement("p");
           meta.style.fontSize = "14px"; meta.style.color = "#555555";
           meta.textContent = total + " vote" + (total === 1 ? "" : "s");
+          if (p.pinned) { meta.textContent = "[pinned] " + meta.textContent; }
           wrap.appendChild(meta);
+          // pin button for chickn (founder)
+          (function (pollId, isPinned) {
+            db.ref("users/" + myUid() + "/name").once("value", function (nsnap) {
+              if (nsnap.val() === "chickn") {
+                var pinBtn = document.createElement("button");
+                pinBtn.className = "mini secondary";
+                pinBtn.textContent = isPinned ? "unpin" : "pin to top";
+                pinBtn.style.fontSize = "12px";
+                pinBtn.onclick = function () {
+                  db.ref("polls/" + pollId).update({ pinned: !isPinned });
+                };
+                wrap.appendChild(pinBtn);
+              }
+            });
+          })(pid, !!p.pinned);
           // comments under each poll
           (function (pollId) {
             var cbtn = document.createElement("button");
