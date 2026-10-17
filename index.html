@@ -780,12 +780,14 @@
   <p>helpful reports: <b id="my-helpful">0</b></p>
   <label for="bio-input">Bio</label>
   <textarea id="bio-input" maxlength="150" placeholder="tell people about you..."></textarea>
+  <h2>decorations (free!)</h2>
+  <p style="font-size:14px">pick up to 5 to show on your profile</p>
+  <div id="profile-decor-picker"></div>
   <label for="birthday-input">Birthday</label>
   <input id="birthday-input" type="date">
   <button id="save-profile-btn">save profile</button>
   <div id="profile-ok"></div>
   <button id="settings-btn" class="secondary">settings</button>
-  <button id="profile-space-btn" class="secondary">my space</button>
   <h2>following</h2>
   <div id="following-list"><p>not following anyone yet</p></div>
   <button id="profile-home-btn" class="secondary">home</button>
@@ -1083,6 +1085,9 @@
   <h1>changelog</h1>
   <div id="log-entries">
     <h2>oct 17, 2026</h2>
+    <p><b>profile decorations</b> — my space is gone for now! the free decorations moved to your profile instead — pick up to 5 in your profile, they show under your bio.</p>
+    <p><b>delete polls</b> — chickn can now delete any poll (asks to confirm first), and polls show two in each row now.</p>
+    <p><b>games grid</b> — snake and cookie clicker tiles moved to the bottom of the games screen.</p>
     <p><b>space decorations</b> — decorate your space! free borders and decorations in the space editor.</p>
     <p><b>font size fixed</b> — the text size section in settings actually opens now. sorry about that!</p>
     <p><b>fullscreen in settings</b> — fullscreen toggle is now in settings.</p>
@@ -1335,12 +1340,12 @@
     <div id="pp-pfp"></div>
     <h2 id="pp-name"></h2>
     <p id="pp-bio"></p>
+    <div id="pp-decor" style="font-size:26px;letter-spacing:6px;"></div>
     <p>birthday: <span id="pp-birthday"></span></p>
     <p>joined: <span id="pp-joined"></span></p>
     <button id="pp-follow-btn" class="secondary">follow</button>
     <div id="pp-badges" style="margin:8px 0;"></div>
     <button id="pp-dm-btn" class="secondary">dm</button>
-    <button id="pp-space-btn" class="secondary">visit space</button>
     <button id="pp-tip-btn" class="secondary">tip xp</button>
     <button id="pp-close-btn" class="secondary">close</button>
   </div>
@@ -3323,6 +3328,9 @@
       document.getElementById("bio-input").value = rec.bio || "";
       document.getElementById("birthday-input").value = rec.birthday || "";
       document.getElementById("profile-ok").textContent = "";
+      db.ref("userSpaces/" + u.uid + "/decor").once("value", function (dsnap) {
+        renderProfileDecorPicker(dsnap.val());
+      });
       refreshHome();
       showScreen("profile-screen");
       renderMyBadges();
@@ -3359,6 +3367,7 @@
       return;
     }
     var birthday = document.getElementById("birthday-input").value;
+    db.ref("userSpaces/" + u.uid).update({ decor: profileEditDecor, at: Date.now() });
     db.ref("users/" + u.uid).update({ bio: censor(bio), birthday: birthday }, function (err) {
       if (err) {
         okMsg.textContent = "Could not save.";
@@ -4259,6 +4268,10 @@
     var ptd = themeDefFor(rec.theme);
     if (ptd) { pcard.className = ptd.cls; }
     document.getElementById("pp-bio").textContent = rec.bio || "no bio yet";
+    db.ref("userSpaces/" + uid + "/decor").once("value", function (dsnap) {
+      var darr = dsnap.val();
+      document.getElementById("pp-decor").textContent = Array.isArray(darr) ? darr.join(" ") : "";
+    });
     document.getElementById("pp-birthday").textContent = rec.birthday || "-";
     document.getElementById("pp-joined").textContent = fmtDate(rec.joinedAt);
     var me = myUid();
@@ -4487,8 +4500,32 @@
   }
   document.getElementById("space-save-btn").onclick = saveSpace;
   document.getElementById("space-back-btn").onclick = function () { showScreen("profile-screen"); };
-  document.getElementById("profile-space-btn").onclick = function () { enterSpace(myUid()); };
-  document.getElementById("pp-space-btn").onclick = function () { if (ppUid) { enterSpace(ppUid); } };
+  var psb = document.getElementById("profile-space-btn"); if (psb) { psb.onclick = function () { enterSpace(myUid()); }; }
+  var psp = document.getElementById("pp-space-btn"); if (psp) { psp.onclick = function () { if (ppUid) { enterSpace(ppUid); } }; }
+
+  /* ---------- profile decorations (moved here from my space) ---------- */
+  var profileEditDecor = [];
+  function renderProfileDecorPicker(curArr) {
+    profileEditDecor = Array.isArray(curArr) ? curArr.slice(0, 5) : [];
+    var box = document.getElementById("profile-decor-picker");
+    if (!box) { return; }
+    box.innerHTML = "";
+    spaceDecorChoices.forEach(function (ch) {
+      var sp = document.createElement("span");
+      sp.className = "decor-pick" + (profileEditDecor.indexOf(ch) !== -1 ? " sel" : "");
+      sp.textContent = ch;
+      sp.onclick = function () {
+        var i = profileEditDecor.indexOf(ch);
+        if (i !== -1) { profileEditDecor.splice(i, 1); }
+        else {
+          if (profileEditDecor.length >= 5) { flashNotice("pick up to 5 decorations!"); return; }
+          profileEditDecor.push(ch);
+        }
+        renderProfileDecorPicker(profileEditDecor);
+      };
+      box.appendChild(sp);
+    });
+  }
 
   /* ---------- chat ---------- */
   function reportCurrentDm() {
