@@ -892,24 +892,30 @@
 <div id="alc-screen" class="hidden">
   <h1>alchemy</h1>
   <p id="alc-count"></p>
-  <div id="alc-mix-row" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0;flex-wrap:wrap;">
-    <div id="alc-box1" class="alc-box">?</div>
-    <div style="font-size:28px;font-weight:bold;">+</div>
-    <div id="alc-box2" class="alc-box">?</div>
-    <div style="font-size:28px;font-weight:bold;">=</div>
-    <div id="alc-box-result" class="alc-box alc-result">?</div>
+  <div style="display:flex;gap:12px;align-items:flex-start;">
+    <div style="flex:1;min-width:0;">
+      <div id="alc-mix-row" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0;flex-wrap:wrap;">
+        <div id="alc-box1" class="alc-box">?</div>
+        <div style="font-size:28px;font-weight:bold;">+</div>
+        <div id="alc-box2" class="alc-box">?</div>
+        <div style="font-size:28px;font-weight:bold;">=</div>
+        <div id="alc-box-result" class="alc-box alc-result">?</div>
+      </div>
+      <div style="text-align:center;margin:8px 0;">
+        <button id="alc-mix-btn">mix!</button>
+        <button id="alc-clear-btn" class="secondary">clear</button>
+      </div>
+      <p id="alc-msg" style="text-align:center;min-height:20px;"></p>
+      <h2>leaderboard</h2>
+      <div id="alc-board"><p>loading...</p></div>
+      <button id="alc-home-btn" class="secondary">games</button>
+    </div>
+    <div style="width:180px;flex-shrink:0;border-left:1px solid #ccc;padding-left:8px;">
+      <h2 style="margin-top:0;">elements</h2>
+      <input id="alc-search" type="text" maxlength="30" placeholder="search..." autocomplete="off" style="width: 100%; margin-bottom: 8px; font-size:14px;box-sizing:border-box;">
+      <div id="alc-lib" style="max-height:500px;overflow-y:auto;"></div>
+    </div>
   </div>
-  <div style="text-align:center;margin:8px 0;">
-    <button id="alc-mix-btn">mix!</button>
-    <button id="alc-clear-btn" class="secondary">clear</button>
-  </div>
-  <p id="alc-msg" style="text-align:center;min-height:20px;"></p>
-  <h2>elements</h2>
-  <input id="alc-search" type="text" maxlength="30" placeholder="search..." autocomplete="off" style="width: 50%; margin-bottom: 8px; font-size:14px;">
-  <div id="alc-lib"></div>
-  <h2>leaderboard</h2>
-  <div id="alc-board"><p>loading...</p></div>
-  <button id="alc-home-btn" class="secondary">games</button>
 </div>
 
 <!-- COOKIE CLICKER -->
@@ -10222,7 +10228,7 @@ function flairName(name, rec) {
     for (var i = 0; i < rules.length; i++) {
       (function (rule) {
         if (rule.type === "chat") {
-          // watch all public rooms for this user speaking
+          // watch all public rooms for this user speaking (or "*" for anyone)
           var ref = db.ref("rooms");
           var handler = function (snap) {
             var rooms = snap.val() || {};
@@ -10234,14 +10240,16 @@ function flairName(name, rec) {
                 var lastKey = keys[keys.length - 1];
                 var m = msgs[lastKey] || {};
                 var mName = (m.name || "").toLowerCase();
-                if (mName === rule.user.toLowerCase() && m.uid !== myUid()) {
+                var match = (rule.user === "*") ? true : (mName === rule.user.toLowerCase());
+                if (match && m.uid !== myUid()) {
                   // avoid duplicate notifications
                   var nk = "notify_" + rule.user + "_" + lastKey;
                   try {
                     if (localStorage.getItem(nk)) return;
                     localStorage.setItem(nk, "1");
                   } catch (e) {}
-                  notify(rule.user + " is talking!", "in " + (rooms[rid].name || "chat") + ": " + String(m.text || "").substring(0, 50),
+                  var title = (rule.user === "*") ? (m.name || "someone") + " is talking!" : rule.user + " is talking!";
+                  notify(title, "in " + (rooms[rid].name || "chat") + ": " + String(m.text || "").substring(0, 50),
                     function () { enterRoom(rid); });
                 }
               })(rid);
@@ -10268,6 +10276,24 @@ function flairName(name, rec) {
         startNotifyWatchers();
       }
       return "got it! i'll notify you whenever " + target + " talks in chat! say 'stop notifying me about " + target + "' to cancel.";
+    }
+    // "notify me when anyone talks" - watch all chat
+    if (t.match(/notify me when anyone (talks|speaks|chats)/)) {
+      var rulesA = getNotifyRules();
+      var existsA = rulesA.some(function (r) { return r.user === "*" && r.type === "chat"; });
+      if (!existsA) {
+        rulesA.push({ user: "*", type: "chat" });
+        saveNotifyRules(rulesA);
+        startNotifyWatchers();
+      }
+      return "got it! i'll notify you whenever anyone talks in chat! say 'stop notifying me about everyone' to cancel.";
+    }
+    if (t.indexOf("stop notifying me about everyone") !== -1) {
+      var rulesB = getNotifyRules();
+      var filteredB = rulesB.filter(function (r) { return !(r.user === "*" && r.type === "chat"); });
+      saveNotifyRules(filteredB);
+      startNotifyWatchers();
+      return "done! no more notifications for everyone talking.";
     }
     // "stop notifying me about X" or "cancel notifications"
     var sm = t.match(/stop notifying me about (\w+)/) || t.match(/cancel notifications? (?:for|about) (\w+)/);
