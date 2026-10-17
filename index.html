@@ -429,6 +429,10 @@
   #event-screen .door-btn { background: #fff; color: #111; border-color: #fff; }
   #event-screen .team-row, #event-screen .board-row { color: #fff; border-bottom-color: #555; }
   #event-screen .team-row.me, #event-screen .board-row.me { background: #333; }
+  .alc-box { width: 100px; height: 100px; border: 3px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; text-align: center; padding: 4px; background: #fff; cursor: pointer; word-break: break-word; }
+  body.dark .alc-box { background: #222; border-color: #888; color: #fff; }
+  .alc-box.alc-result { border-color: #2a2; }
+  body.dark .alc-box.alc-result { border-color: #4a4; }
   .team-tag { width: 18px; height: 18px; image-rendering: pixelated; vertical-align: -3px; margin-left: 3px; border: 1px solid #111; background: #fff; }
 
   .event-btn {
@@ -888,13 +892,20 @@
 <div id="alc-screen" class="hidden">
   <h1>alchemy</h1>
   <p id="alc-count"></p>
-  <h2>mixing</h2>
-  <div id="alc-mix"></div>
-  <button id="alc-mix-btn">mix!</button>
-  <button id="alc-clear-btn" class="secondary">clear</button>
-  <p id="alc-msg"></p>
+  <div id="alc-mix-row" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0;flex-wrap:wrap;">
+    <div id="alc-box1" class="alc-box">?</div>
+    <div style="font-size:28px;font-weight:bold;">+</div>
+    <div id="alc-box2" class="alc-box">?</div>
+    <div style="font-size:28px;font-weight:bold;">=</div>
+    <div id="alc-box-result" class="alc-box alc-result">?</div>
+  </div>
+  <div style="text-align:center;margin:8px 0;">
+    <button id="alc-mix-btn">mix!</button>
+    <button id="alc-clear-btn" class="secondary">clear</button>
+  </div>
+  <p id="alc-msg" style="text-align:center;min-height:20px;"></p>
   <h2>elements</h2>
-  <input id="alc-search" type="text" maxlength="30" placeholder="search elements..." autocomplete="off" style="width: 90%; margin-bottom: 8px;">
+  <input id="alc-search" type="text" maxlength="30" placeholder="search..." autocomplete="off" style="width: 50%; margin-bottom: 8px; font-size:14px;">
   <div id="alc-lib"></div>
   <h2>leaderboard</h2>
   <div id="alc-board"><p>loading...</p></div>
@@ -4531,7 +4542,7 @@
   document.getElementById("gt-start-btn").onclick = function () { gtStart(); };
   document.getElementById("gt-back-btn").onclick = function () { enterGames(); };
   document.getElementById("alc-mix-btn").onclick = function () { alcMix(); };
-  document.getElementById("alc-clear-btn").onclick = function () { alcSel = []; document.getElementById("alc-msg").textContent = ""; alcRender(); };
+  document.getElementById("alc-clear-btn").onclick = function () { alcSel = []; document.getElementById("alc-msg").textContent = ""; document.getElementById("alc-box-result").textContent = "?"; alcRender(); };
   document.getElementById("alc-home-btn").onclick = function () { enterGames(); };
 
   /* ---------- cookie clicker ---------- */
@@ -9534,10 +9545,19 @@ function flairName(name, rec) {
     }, function (err) { box.innerHTML = "<p>could not load.</p>"; });
   }
   var alcSearchQ = "";
+  var alcOrder = [];
   function alcRender() {
     var lib = document.getElementById("alc-lib");
     lib.innerHTML = "";
-    var names = Object.keys(alcDiscovered).sort();
+    // most recent first, then alphabetical for the rest
+    var names = Object.keys(alcDiscovered);
+    names.sort(function (a, b) {
+      var ia = alcOrder.indexOf(a), ib = alcOrder.indexOf(b);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a < b ? -1 : (a > b ? 1 : 0);
+    });
     document.getElementById("alc-count").textContent = names.length + " discovered";
     if (alcSearchQ) {
       var q = alcSearchQ.toLowerCase();
@@ -9547,23 +9567,24 @@ function flairName(name, rec) {
       (function (n) {
         var b = document.createElement("button");
         b.textContent = n;
+        b.style.fontSize = "14px"; b.style.padding = "6px 8px"; b.style.margin = "2px";
         if (alcSel.indexOf(n) !== -1) { b.className = "sel"; }
         b.onclick = function () { alcTap(n); };
         lib.appendChild(b);
       })(names[i]);
     }
-    var mx = document.getElementById("alc-mix");
-    mx.innerHTML = "";
-    for (var j = 0; j < alcSel.length; j++) {
-      (function (n) {
-        var b = document.createElement("button");
-        b.className = "sel";
-        b.textContent = n;
-        b.onclick = function () { alcTap(n); };
-        mx.appendChild(b);
-      })(alcSel[j]);
-    }
-    if (!alcSel.length) { mx.innerHTML = "<p>tap two elements, then mix!</p>"; }
+    // update the big boxes
+    var b1 = document.getElementById("alc-box1");
+    var b2 = document.getElementById("alc-box2");
+    if (b1) b1.textContent = alcSel[0] || "?";
+    if (b2) b2.textContent = alcSel[1] || "?";
+  }
+  // tapping a box removes that element
+  function alcUntap(idx) {
+    alcSel.splice(idx, 1);
+    document.getElementById("alc-msg").textContent = "";
+    document.getElementById("alc-box-result").textContent = "?";
+    alcRender();
   }
   function alcTap(n) {
     // allow the same element twice (e.g. water+water)
@@ -9574,21 +9595,40 @@ function flairName(name, rec) {
   }
   function alcMix() {
     var msg = document.getElementById("alc-msg");
+    var rbox = document.getElementById("alc-box-result");
     if (alcSel.length !== 2) { msg.textContent = "pick two elements first!"; return; }
     var r = ALC_RECIPES[alcKey(alcSel[0], alcSel[1])];
-    if (!r) { msg.textContent = alcSel[0] + " + " + alcSel[1] + " = nothing..."; alcSel = []; alcRender(); return; }
+    if (!r) {
+      if (rbox) rbox.textContent = "nothing";
+      msg.textContent = alcSel[0] + " + " + alcSel[1] + " = nothing...";
+      alcSel = []; alcRender(); return;
+    }
     var isNew = !alcDiscovered[r];
     alcDiscovered[r] = 1;
+    // track order for most-recent-first
+    var oi = alcOrder.indexOf(r);
+    if (oi !== -1) alcOrder.splice(oi, 1);
+    alcOrder.unshift(r);
+    try { localStorage.setItem("readium_alc_order", JSON.stringify(alcOrder.slice(0, 100))); } catch (e) {}
     alcSave();
     if (isNew && myUid()) {
       var cnt = Object.keys(alcDiscovered).length;
       db.ref("alcScores/" + myUid()).set({ name: displayName(), count: cnt, at: Date.now() });
     }
-    msg.textContent = alcSel[0] + " + " + alcSel[1] + " = " + r + (isNew ? " (new! +2 xp)" : "");
+    if (rbox) rbox.textContent = r;
+    msg.textContent = isNew ? "NEW! " + r + " discovered! +2 xp" : r;
     if (isNew && typeof changeXp === "function" && myUid()) { changeXp(myUid(), 2); }
     alcSel = [];
     alcRender();
   }
+  // load saved order
+  try {
+    var _ao = JSON.parse(localStorage.getItem("readium_alc_order") || "[]");
+    if (_ao.length) alcOrder = _ao;
+  } catch (e) {}
+  // wire up box taps to remove
+  document.getElementById("alc-box1").onclick = function () { if (alcSel[0]) alcUntap(0); };
+  document.getElementById("alc-box2").onclick = function () { if (alcSel[1]) alcUntap(1); };
   function enterCritter() {
     critterLoad();
     showScreen("critter-screen");
@@ -10163,9 +10203,92 @@ function flairName(name, rec) {
     }, 500);
   }
   var chatbotMemory = { name: null, favGame: null, asked: {} };
+  /* ---------- custom user notifications ---------- */
+  function getNotifyRules() {
+    try { return JSON.parse(localStorage.getItem("readium_notify_rules") || "[]"); }
+    catch (e) { return []; }
+  }
+  function saveNotifyRules(rules) {
+    try { localStorage.setItem("readium_notify_rules", JSON.stringify(rules)); } catch (e) {}
+  }
+  var notifyWatchers = {};
+  function startNotifyWatchers() {
+    var rules = getNotifyRules();
+    // clear old watchers
+    for (var k in notifyWatchers) {
+      try { notifyWatchers[k].off(); } catch (e) {}
+    }
+    notifyWatchers = {};
+    for (var i = 0; i < rules.length; i++) {
+      (function (rule) {
+        if (rule.type === "chat") {
+          // watch all public rooms for this user speaking
+          var ref = db.ref("rooms");
+          var handler = function (snap) {
+            var rooms = snap.val() || {};
+            for (var rid in rooms) {
+              (function (rid) {
+                var msgs = rooms[rid].messages || {};
+                var keys = Object.keys(msgs);
+                if (!keys.length) return;
+                var lastKey = keys[keys.length - 1];
+                var m = msgs[lastKey] || {};
+                var mName = (m.name || "").toLowerCase();
+                if (mName === rule.user.toLowerCase() && m.uid !== myUid()) {
+                  // avoid duplicate notifications
+                  var nk = "notify_" + rule.user + "_" + lastKey;
+                  try {
+                    if (localStorage.getItem(nk)) return;
+                    localStorage.setItem(nk, "1");
+                  } catch (e) {}
+                  notify(rule.user + " is talking!", "in " + (rooms[rid].name || "chat") + ": " + String(m.text || "").substring(0, 50),
+                    function () { enterRoom(rid); });
+                }
+              })(rid);
+            }
+          };
+          ref.on("value", handler);
+          notifyWatchers["chat_" + rule.user] = ref;
+        }
+      })(rules[i]);
+    }
+  }
   function chatbotReply(text) {
     var t = text.toLowerCase().trim();
     var orig = text.trim();
+    // custom notifications: "notify me when X talks/speaks/chats"
+    var nm = t.match(/notify me when (\w+) (talks|speaks|chats|sends? a message|messages?)/);
+    if (nm) {
+      var target = nm[1];
+      var rules = getNotifyRules();
+      var exists = rules.some(function (r) { return r.user.toLowerCase() === target.toLowerCase() && r.type === "chat"; });
+      if (!exists) {
+        rules.push({ user: target, type: "chat" });
+        saveNotifyRules(rules);
+        startNotifyWatchers();
+      }
+      return "got it! i'll notify you whenever " + target + " talks in chat! say 'stop notifying me about " + target + "' to cancel.";
+    }
+    // "stop notifying me about X" or "cancel notifications"
+    var sm = t.match(/stop notifying me about (\w+)/) || t.match(/cancel notifications? (?:for|about) (\w+)/);
+    if (sm) {
+      var starget = sm[1];
+      var rules2 = getNotifyRules();
+      var filtered = rules2.filter(function (r) { return r.user.toLowerCase() !== starget.toLowerCase(); });
+      saveNotifyRules(filtered);
+      startNotifyWatchers();
+      return "done! i won't notify you about " + starget + " anymore.";
+    }
+    if (t.indexOf("stop all notifications") !== -1 || t.indexOf("cancel all notifications") !== -1) {
+      saveNotifyRules([]);
+      startNotifyWatchers();
+      return "all custom notifications cleared!";
+    }
+    if (t.indexOf("my notifications") !== -1 || t.indexOf("what am i watching") !== -1) {
+      var r3 = getNotifyRules();
+      if (!r3.length) return "you're not watching anyone right now. say 'notify me when [username] talks' to set one up!";
+      return "you're watching: " + r3.map(function (x) { return x.user; }).join(", ");
+    }
     // remember user's name
     var nameMatch = t.match(/my name is (\w+)/) || t.match(/i'm (\w+)/) || t.match(/im (\w+)/);
     if (nameMatch && !/^(fine|good|ok|okay|here|just|so|very|really|not|dumb|smart|bored|tired|happy|sad)$/.test(nameMatch[1])) {
@@ -11016,6 +11139,7 @@ function flairName(name, rec) {
       updatePollDot();
       checkBanMessage();
       watchMentions();
+      startNotifyWatchers();
       checkMod();
       startPresence();
       checkXpGrants();
