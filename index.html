@@ -1085,6 +1085,7 @@
   <h1>changelog</h1>
   <div id="log-entries">
     <h2>oct 17, 2026</h2>
+    <p><b>chat pfps fixed</b> — profile pictures show next to names in chat again for everyone (no more blanks!).</p>
     <p><b>profile decorations</b> — my space is gone for now! the free decorations moved to your profile instead — pick up to 5 in your profile, they show under your bio.</p>
     <p><b>delete polls</b> — chickn can now delete any poll (asks to confirm first), and polls show two in each row now.</p>
     <p><b>games grid</b> — snake and cookie clicker tiles moved to the bottom of the games screen.</p>
@@ -2701,7 +2702,7 @@
     var q = document.getElementById("dm-lookup").value.replace(/^\s+|\s+$/g, "").toLowerCase();
     if (q.length < 2) { showDmError("Type at least 2 letters of their name."); return; }
     var me = myUid();
-    db.ref("users").limitToFirst(200).once("value", function (snap) {
+    db.ref("users").once("value", function (snap) {
       var v = snap.val() || {};
       var found = 0;
       var uids = Object.keys(v);
@@ -2889,7 +2890,7 @@
     var q = String(input.value || "").trim().toLowerCase();
     if (q.length < 2) { box.innerHTML = ""; return; }
     box.innerHTML = "<p>searching...</p>";
-    db.ref("users").limitToFirst(200).once("value", function (snap) {
+    db.ref("users").once("value", function (snap) {
       var v = snap.val() || {};
       var keys = Object.keys(v).filter(function (uid) {
         var nm = (v[uid] && v[uid].name) || "";
@@ -4586,7 +4587,7 @@
     clearTyping();
     typingRef = db.ref("typing/" + currentConvoKey);
     typingRef.on("value", function (snap) { renderTyping(snap.val()); });
-    db.ref("users").limitToFirst(200).once("value", function (snap) {
+    db.ref("users").once("value", function (snap) {
       usersByName = {};
       var v = snap.val() || {};
       var uids = Object.keys(v);
@@ -4713,14 +4714,13 @@
     var pfpStr = (urec && urec.rec.pfp) ? urec.rec.pfp : null;
     if (!pfpStr && m.uid && auth.currentUser && m.uid === auth.currentUser.uid) { pfpStr = currentPfp; }
     if (pfpStr) { pw.appendChild(pfpImg(pfpStr, 2)); }
-    else {
-      var ph = document.createElement("div");
-      ph.className = "pfp";
-      ph.style.width = "32px";
-      ph.style.height = "32px";
-      ph.style.background = "#ffffff";
-      pw.appendChild(ph);
+    else if (m.uid) {
+      // name lookup missed (renamed user, etc.) — show the default face, then load the real pfp by uid
+      var fimg = pfpImg(blankPfp(), 2);
+      pw.appendChild(fimg);
+      fillPfpImg(fimg, m.uid);
     }
+    else { pw.appendChild(pfpImg(blankPfp(), 2)); }
     var ns = document.createElement("span");
     ns.className = "name";
     var urecF = usersByName[String(m.name || "").toLowerCase()];
