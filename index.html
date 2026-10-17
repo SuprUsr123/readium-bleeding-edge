@@ -11142,6 +11142,7 @@ function flairName(name, rec) {
   }
   function critterAttack() {
     var b = critterBattle;
+    if (!b || b.over) { return; }
     var wild = b.wild, mine = critterMyCritter();
     // player attacks
     var eff = critterEffectiveness(mine.type, wild.type);
@@ -11149,7 +11150,8 @@ function flairName(name, rec) {
     wild.hp = Math.max(0, wild.hp - dmg);
     b.msg = mine.name + " dealt " + dmg + " damage!" + (eff > 1 ? " super effective!" : (eff < 1 ? " resisted..." : ""));
     if (wild.hp <= 0) {
-      // won!
+      // won! (lock the battle so spamming buttons can't re-trigger this)
+      b.over = true;
       var xpGain = 5 + wild.lvl * 2;
       mine.lvl++;
       mine.maxHp = Math.round(mine.maxHp * 1.1);
@@ -11169,6 +11171,7 @@ function flairName(name, rec) {
       }
       critterStore();
       b.msg = "wild " + wild.name + " fainted! " + mine.name + " grew to Lv" + mine.lvl + "! +" + xpGain + " xp" + evoMsg;
+      if (typeof changeXp === "function" && myUid()) { changeXp(myUid(), xpGain); }
       xpWinOnce("critter");
       // heal a bit
       setTimeout(function () { critterBattle = null; critterRender(); }, 1500);
@@ -11187,6 +11190,7 @@ function flairName(name, rec) {
         if (critterSave.team[i].hp > 0) { next = i; break; }
       }
       if (next === -1) {
+        b.over = true;
         b.msg = "all your critters fainted... you run home!";
         critterStore();
         setTimeout(function () {
@@ -11206,6 +11210,7 @@ function flairName(name, rec) {
   }
   function critterTrap() {
     var b = critterBattle;
+    if (!b || b.over) { return; }
     if (critterSave.traps <= 0) { b.msg = "no traps left!"; critterRender(); return; }
     critterSave.traps--;
     var wild = b.wild;
@@ -11213,6 +11218,7 @@ function flairName(name, rec) {
     var hpFactor = 1 - (wild.hp / wild.maxHp) * 0.6; // lower hp = easier
     var chance = base * hpFactor;
     if (Math.random() < chance) {
+      b.over = true;
       // caught! scale stats to the wild's level (they used to stay at level 1)
       var newC = critterNew(wild.id);
       newC.lvl = wild.lvl;
@@ -11247,6 +11253,7 @@ function flairName(name, rec) {
   }
   function critterRun() {
     var b = critterBattle;
+    if (!b || b.over) { return; }
     if (Math.random() < 0.6) {
       b.msg = "got away safely!";
       setTimeout(function () { critterBattle = null; critterRender(); }, 800);
