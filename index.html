@@ -1563,6 +1563,7 @@
   document.getElementById("set-online-toggle").onclick = function () {
     var on = !isOnlineListOn();
     try { localStorage.setItem("readium_online_list", on ? "1" : "0"); } catch (e) {}
+    backupSetting("readium_online_list", on ? "1" : "0");
     updateOnlinePanel();
   };
 
@@ -1792,6 +1793,32 @@
       refreshHome();
     });
   }
+  // apply all saved settings from localStorage
+  function applyAllSettings() {
+    try {
+      // theme
+      var dark = false;
+      try { dark = localStorage.getItem("readium_theme") === "dark"; } catch (e) {}
+      document.body.className = document.body.className.replace(/\bdark\b/g, "").trim();
+      if (dark) document.body.className += " dark";
+      // font size
+      var size = "normal";
+      try { size = localStorage.getItem("readium_fontsize") || "normal"; } catch (e) {}
+      document.body.className = document.body.className.replace(/\b(bigfont|smallfont)\b/g, "").trim();
+      if (size === "large") document.body.className += " bigfont";
+      else if (size === "small") document.body.className += " smallfont";
+    } catch (e) {}
+  }
+  // backup a setting to Firebase cloud
+  function backupSetting(key, val) {
+    try {
+      if (auth.currentUser) {
+        var up = {};
+        up[key] = String(val);
+        db.ref("userSettings/" + auth.currentUser.uid).update(up);
+      }
+    } catch (e) {}
+  }
   function checkMod() {
     var u = auth.currentUser;
     // founder check via email (bulletproof - can't glitch like displayName)
@@ -2006,6 +2033,7 @@
   }
   document.getElementById("set-enter-toggle").onclick = function () {
     try { localStorage.setItem("readium_sendOnEnter", getSendOnEnter() ? "0" : "1"); } catch (e) {}
+    backupSetting("readium_sendOnEnter", getSendOnEnter() ? "0" : "1");
     updateEnterToggle();
   };
   updateEnterToggle();
@@ -3225,6 +3253,7 @@
       return;
     }
     try { localStorage.setItem("readium_tz", tz); } catch (e) {}
+      backupSetting("readium_tz", tz);
     var u = auth.currentUser;
     if (u) { db.ref("users/" + u.uid + "/timezone").set(tz); }
     st.textContent = "current timezone: " + tz;
@@ -3232,10 +3261,12 @@
   };
   document.getElementById("clock12-btn").onclick = function () {
     try { localStorage.setItem("readium_clock24", "0"); } catch (e) {}
+      backupSetting("readium_clock24", "0");
     updateClock();
   };
   document.getElementById("clock24-btn").onclick = function () {
     try { localStorage.setItem("readium_clock24", "1"); } catch (e) {}
+      backupSetting("readium_clock24", "1");
     updateClock();
   };
   document.getElementById("change-pw-btn").onclick = function () {
@@ -3372,26 +3403,36 @@
         grid.appendChild(cell);
       })(i);
     }
-    // touch drag painting - find cell under finger
-    grid.ontouchmove = function (e) {
-      if (e && e.preventDefault) { e.preventDefault(); }
-      var t = e.touches[0];
-      if (!t) return;
-      var el = document.elementFromPoint(t.clientX, t.clientY);
-      if (el && el.getAttribute) {
-        var idx = el.getAttribute("data-px");
-        if (idx !== null && idx !== undefined && idx !== "") {
-          var i2 = parseInt(idx, 10);
+    // touch drag painting - document-level for Kindle compatibility
+    grid.ontouchend = function () { poxelPainting = false; };
+  }
+  // document-level touch drag for poxel - works on Kindle
+  document.addEventListener("touchmove", function (e) {
+    var grid = document.getElementById("poxel-grid");
+    if (!grid || grid.className === "hidden" || !poxelPainting) return;
+    // check if we're on the poxel screen
+    var ps = document.getElementById("poxel-screen");
+    if (!ps || ps.className === "hidden") return;
+    if (e && e.preventDefault) { try { e.preventDefault(); } catch (err) {} }
+    var t = e.touches[0];
+    if (!t) return;
+    var el = null;
+    try { el = document.elementFromPoint(t.clientX, t.clientY); } catch (err) { return; }
+    if (el && el.getAttribute) {
+      var idx = el.getAttribute("data-px");
+      if (idx !== null && idx !== "" && idx !== undefined) {
+        var i2 = parseInt(idx, 10);
+        if (!isNaN(i2) && i2 >= 0 && i2 < poxelData.length) {
           var col = (poxelColor === "e") ? "0" : poxelColor;
           if (poxelData.charAt(i2) !== col) {
             poxelData = poxelData.substring(0, i2) + col + poxelData.substring(i2 + 1);
-            el.style.background = PALETTE[parseInt(col, 10)];
+            el.style.background = PALETTE[parseInt(col, 10)] || "#fff";
           }
         }
       }
-    };
-    grid.ontouchend = function () { poxelPainting = false; };
-  }
+    }
+  }, { passive: false });
+  document.addEventListener("touchend", function () { poxelPainting = false; });
   function buildPoxelPalette() {
     var pal = document.getElementById("poxel-palette");
     pal.innerHTML = "";
@@ -3570,6 +3611,33 @@
     };
     grid.ontouchend = function () { flipPainting = false; renderFlipTimeline(); };
   }
+  // document-level touch drag for flipbook - works on Kindle
+  document.addEventListener("touchmove", function (e) {
+    var grid = document.getElementById("flip-grid");
+    if (!grid || !flipPainting) return;
+    var fs = document.getElementById("flipbook-screen");
+    if (!fs || fs.className === "hidden") return;
+    if (e && e.preventDefault) { try { e.preventDefault(); } catch (err) {} }
+    var t = e.touches[0];
+    if (!t) return;
+    var el = null;
+    try { el = document.elementFromPoint(t.clientX, t.clientY); } catch (err) { return; }
+    if (el && el.getAttribute) {
+      var idx = el.getAttribute("data-fpx");
+      if (idx !== null && idx !== "" && idx !== undefined) {
+        var i2 = parseInt(idx, 10);
+        if (!isNaN(i2) && flipFrames[flipCur]) {
+          var col = (flipColor === "e") ? "0" : flipColor;
+          var d = flipFrames[flipCur];
+          if (d.charAt(i2) !== col) {
+            flipFrames[flipCur] = d.substring(0, i2) + col + d.substring(i2 + 1);
+            el.style.background = PALETTE[parseInt(col, 10)] || "#fff";
+            el.style.opacity = "1";
+          }
+        }
+      }
+    }
+  }, { passive: false });
   function buildFlipPalette() {
     var pal = document.getElementById("flip-palette");
     pal.innerHTML = "";
@@ -4660,10 +4728,12 @@
   }
   document.getElementById("theme-light-btn").onclick = function () {
     try { localStorage.setItem("readium_theme", "light"); } catch (e) {}
+        backupSetting("readium_theme", "light");
     applyTheme();
   };
   document.getElementById("theme-dark-btn").onclick = function () {
     try { localStorage.setItem("readium_theme", "dark"); } catch (e) {}
+        backupSetting("readium_theme", "dark");
     applyTheme();
   };
   applyTheme();
@@ -4686,14 +4756,17 @@
   }
   document.getElementById("font-small-btn").onclick = function () {
     try { localStorage.setItem("readium_fontsize", "small"); } catch (e) {}
+        backupSetting("readium_fontsize", "small");
     applyFontSize();
   };
   document.getElementById("font-normal-btn").onclick = function () {
     try { localStorage.setItem("readium_fontsize", "normal"); } catch (e) {}
+        backupSetting("readium_fontsize", "normal");
     applyFontSize();
   };
   document.getElementById("font-large-btn").onclick = function () {
     try { localStorage.setItem("readium_fontsize", "large"); } catch (e) {}
+        backupSetting("readium_fontsize", "large");
     applyFontSize();
   };
   applyFontSize();
@@ -11697,6 +11770,24 @@ function flairName(name, rec) {
       watchMentions();
       startNotifyWatchers();
       checkMod();
+      // cloud settings backup: restore from Firebase if localStorage was wiped (Kindle)
+      try {
+        db.ref("userSettings/" + auth.currentUser.uid).once("value", function (snap) {
+          var cloud = snap.val();
+          if (!cloud) return;
+          var keys = ["readium_theme", "readium_fontsize", "readium_clock24", "readium_tz", "readium_sendOnEnter", "readium_online_list"];
+          var restored = false;
+          for (var i = 0; i < keys.length; i++) {
+            var k = keys[i];
+            var local = null;
+            try { local = localStorage.getItem(k); } catch (e) {}
+            if ((local === null || local === undefined) && cloud[k] !== undefined) {
+              try { localStorage.setItem(k, cloud[k]); restored = true; } catch (e) {}
+            }
+          }
+          if (restored) { applyAllSettings(); }
+        });
+      } catch (e) {}
       // heartbeat: restart notification watchers every 60s to keep them alive everywhere
       if (window._notifHeartbeat) { clearInterval(window._notifHeartbeat); }
       window._notifHeartbeat = setInterval(function () {
