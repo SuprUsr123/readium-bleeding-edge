@@ -1100,6 +1100,7 @@
     <h2>oct 17, 2026</h2>
     <p><b>critter catch update</b> — 24 critters now (stone, wind, and ice types are new!), with common/uncommon/rare rarities. starters evolve at level 8-10, and 5% of wilds are shiny! also harder: wilds can be stronger than you, bad matchups get resisted, traps are rarer, and wipes only revive at 25% hp. bug fixes too: caught critters now have the right stats for their level.</p>
     <p><b>polls show who posted</b> — every poll now says "posted by [name]" so you don't have to type your name in the question anymore.</p>
+    <p><b>alchemy cloud backup</b> — your discovered elements are now backed up online, so they come back even if the kindle wipes its saved data.</p>
     <p><b>what did you miss</b> — when you sign in, a screen now shows what happened while you were away: mentions, new DM requests, new DMs, and new polls!</p>
     <p><b>colorsoft mode</b> — new appearance option in settings! soft colors made for the kindle colorsoft screen.</p>
     <p><b>request dm button</b> — profiles now have a "request dm" button that sends a DM request in one tap!</p>
@@ -10799,6 +10800,36 @@ function flairName(name, rec) {
   function alcSave() {
     try { localStorage.setItem("readium_alc", JSON.stringify(Object.keys(alcDiscovered))); } catch (e) {}
   }
+  // cloud backup: the kindle browser wipes localStorage sometimes, so keep a copy in firebase too
+  function alcBackup() {
+    try {
+      if (auth.currentUser) {
+        db.ref("userAlchemy/" + auth.currentUser.uid).set({
+          elements: Object.keys(alcDiscovered),
+          order: alcOrder.slice(0, 100),
+          at: Date.now()
+        });
+      }
+    } catch (e) {}
+  }
+  function alcRestore() {
+    try {
+      if (!auth.currentUser) { return; }
+      db.ref("userAlchemy/" + auth.currentUser.uid).once("value", function (snap) {
+        var v = snap.val();
+        if (!v) { return; }
+        var changed = false;
+        (v.elements || []).forEach(function (n) { if (!alcDiscovered[n]) { alcDiscovered[n] = 1; changed = true; } });
+        if (v.order && v.order.length) {
+          var seen = {};
+          alcOrder.forEach(function (n) { seen[n] = 1; });
+          v.order.forEach(function (n) { if (!seen[n] && alcDiscovered[n]) { alcOrder.push(n); seen[n] = 1; } });
+          alcOrder = alcOrder.slice(0, 100);
+        }
+        if (changed) { alcSave(); alcRender(); }
+      });
+    } catch (e) {}
+  }
   function alcLoad() {
     alcDiscovered = {};
     ALC_BASE.forEach(function (b) { alcDiscovered[b] = 1; });
@@ -10817,6 +10848,7 @@ function flairName(name, rec) {
     showScreen("alc-screen");
     alcRender();
     alcLoadBoard();
+    alcRestore(); // merge in cloud backup in case localStorage was wiped
   }
   function alcLoadBoard() {
     var box = document.getElementById("alc-board");
@@ -10908,6 +10940,7 @@ function flairName(name, rec) {
     alcOrder.unshift(r);
     try { localStorage.setItem("readium_alc_order", JSON.stringify(alcOrder.slice(0, 100))); } catch (e) {}
     alcSave();
+    alcBackup();
     if (isNew && myUid()) {
       var cnt = Object.keys(alcDiscovered).length;
       db.ref("alcScores/" + myUid()).set({ name: displayName(), count: cnt, at: Date.now() });
