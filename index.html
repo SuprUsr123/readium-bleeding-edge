@@ -1098,6 +1098,8 @@
   <h1>changelog</h1>
   <div id="log-entries">
     <h2>oct 17, 2026</h2>
+    <p><b>critter catch update</b> — 24 critters now (stone, wind, and ice types are new!), with common/uncommon/rare rarities. starters evolve at level 8-10, and 5% of wilds are shiny! also harder: wilds can be stronger than you, bad matchups get resisted, traps are rarer, and wipes only revive at 25% hp. bug fixes too: caught critters now have the right stats for their level.</p>
+    <p><b>polls show who posted</b> — every poll now says "posted by [name]" so you don't have to type your name in the question anymore.</p>
     <p><b>what did you miss</b> — when you sign in, a screen now shows what happened while you were away: mentions, new DM requests, new DMs, and new polls!</p>
     <p><b>colorsoft mode</b> — new appearance option in settings! soft colors made for the kindle colorsoft screen.</p>
     <p><b>request dm button</b> — profiles now have a "request dm" button that sends a DM request in one tap!</p>
@@ -9769,20 +9771,39 @@ function flairName(name, rec) {
 
   /* ---------- critter catch (pokemon-like) ---------- */
   var CRITTERS = [
-    { id: "embercub", name: "Embercub", type: "fire", hp: 45, atk: 12, catch: 0.5 },
-    { id: "aquafin", name: "Aquafin", type: "water", hp: 50, atk: 10, catch: 0.5 },
-    { id: "leafhop", name: "Leafhop", type: "leaf", hp: 40, atk: 11, catch: 0.5 },
-    { id: "sparkpup", name: "Sparkpup", type: "spark", hp: 35, atk: 14, catch: 0.45 },
-    { id: "shadeling", name: "Shadeling", type: "shadow", hp: 55, atk: 9, catch: 0.4 },
-    { id: "frostbite", name: "Frostbite", type: "water", hp: 42, atk: 13, catch: 0.45 },
-    { id: "thornback", name: "Thornback", type: "leaf", hp: 60, atk: 8, catch: 0.4 },
-    { id: "cindercub", name: "Cindercub", type: "fire", hp: 38, atk: 15, catch: 0.45 },
-    { id: "voltpaw", name: "Voltpaw", type: "spark", hp: 33, atk: 16, catch: 0.4 },
-    { id: "mistwing", name: "Mistwing", type: "water", hp: 48, atk: 11, catch: 0.45 },
-    { id: "rootle", name: "Rootle", type: "leaf", hp: 52, atk: 10, catch: 0.45 },
-    { id: "duskpaw", name: "Duskpaw", type: "shadow", hp: 44, atk: 13, catch: 0.4 }
+    { id: "embercub", name: "Embercub", type: "fire", hp: 45, atk: 12, catch: 0.45, rarity: "common", evo: { lvl: 8, name: "Pyrofang", hp: 20, atk: 7 } },
+    { id: "aquafin", name: "Aquafin", type: "water", hp: 50, atk: 10, catch: 0.45, rarity: "common", evo: { lvl: 8, name: "Tidalmane", hp: 22, atk: 6 } },
+    { id: "leafhop", name: "Leafhop", type: "leaf", hp: 40, atk: 11, catch: 0.45, rarity: "common", evo: { lvl: 8, name: "Florabound", hp: 18, atk: 6 } },
+    { id: "sparkpup", name: "Sparkpup", type: "spark", hp: 35, atk: 14, catch: 0.4, rarity: "common", evo: { lvl: 10, name: "Voltstriker", hp: 15, atk: 9 } },
+    { id: "pebblor", name: "Pebblor", type: "stone", hp: 55, atk: 9, catch: 0.45, rarity: "common", evo: { lvl: 10, name: "Boulderback", hp: 25, atk: 5 } },
+    { id: "gustkit", name: "Gustkit", type: "wind", hp: 38, atk: 12, catch: 0.45, rarity: "common", evo: { lvl: 10, name: "Tempestwing", hp: 15, atk: 8 } },
+    { id: "mosshorn", name: "Mosshorn", type: "leaf", hp: 58, atk: 9, catch: 0.4, rarity: "common" },
+    { id: "sandpup", name: "Sandpup", type: "stone", hp: 48, atk: 11, catch: 0.4, rarity: "common" },
+    { id: "cindercub", name: "Cindercub", type: "fire", hp: 38, atk: 15, catch: 0.4, rarity: "common" },
+    { id: "rootle", name: "Rootle", type: "leaf", hp: 52, atk: 10, catch: 0.4, rarity: "common" },
+    { id: "shadeling", name: "Shadeling", type: "shadow", hp: 55, atk: 9, catch: 0.3, rarity: "uncommon" },
+    { id: "frostbite", name: "Frostbite", type: "water", hp: 42, atk: 13, catch: 0.3, rarity: "uncommon" },
+    { id: "thornback", name: "Thornback", type: "leaf", hp: 60, atk: 8, catch: 0.3, rarity: "uncommon" },
+    { id: "voltpaw", name: "Voltpaw", type: "spark", hp: 33, atk: 16, catch: 0.3, rarity: "uncommon" },
+    { id: "mistwing", name: "Mistwing", type: "water", hp: 48, atk: 11, catch: 0.3, rarity: "uncommon" },
+    { id: "duskpaw", name: "Duskpaw", type: "shadow", hp: 44, atk: 13, catch: 0.3, rarity: "uncommon" },
+    { id: "breezebit", name: "Breezebit", type: "wind", hp: 35, atk: 13, catch: 0.3, rarity: "uncommon" },
+    { id: "iceling", name: "Iceling", type: "ice", hp: 40, atk: 12, catch: 0.3, rarity: "uncommon" },
+    { id: "glimmerfox", name: "Glimmerfox", type: "shadow", hp: 42, atk: 15, catch: 0.28, rarity: "uncommon" },
+    { id: "lavahound", name: "Lavahound", type: "fire", hp: 50, atk: 15, catch: 0.2, rarity: "rare" },
+    { id: "tidalhorn", name: "Tidalhorn", type: "water", hp: 55, atk: 14, catch: 0.2, rarity: "rare" },
+    { id: "stormroc", name: "Stormroc", type: "spark", hp: 45, atk: 16, catch: 0.18, rarity: "rare" },
+    { id: "crystalback", name: "Crystalback", type: "stone", hp: 65, atk: 12, catch: 0.18, rarity: "rare" },
+    { id: "aurorawing", name: "Aurorawing", type: "ice", hp: 48, atk: 14, catch: 0.2, rarity: "rare" }
   ];
-  var CRITTER_BEATS = { fire: "leaf", water: "fire", leaf: "water", spark: "water", shadow: "spark" };
+  var CRITTER_BEATS = { fire: "leaf", water: "fire", leaf: "water", spark: "water", shadow: "spark", stone: "spark", wind: "leaf", ice: "wind" };
+  function critterWildPick() {
+    var r = Math.random();
+    var want = r < 0.6 ? "common" : (r < 0.9 ? "uncommon" : "rare");
+    var pool = [];
+    for (var i = 0; i < CRITTERS.length; i++) { if (CRITTERS[i].rarity === want) { pool.push(CRITTERS[i]); } }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
   var critterSave = null;
   var critterBattle = null;
   function critterLoad() {
@@ -10953,7 +10974,7 @@ function flairName(name, rec) {
     });
     if (critterSave.box.length) {
       var boxH = document.createElement("h2");
-      boxH.textContent = "collection (" + critterSave.box.length + "/12)";
+      boxH.textContent = "collection (" + critterSave.box.length + "/" + CRITTERS.length + ")";
       box.appendChild(boxH);
       var seen = {};
       critterSave.box.forEach(function (c) { seen[c.id] = true; });
@@ -10964,11 +10985,21 @@ function flairName(name, rec) {
     }
   }
   function critterExplore() {
-    var r = Math.random();
-    if (r < 0.2) {
-      critterSave.traps += 2;
+    // guard: all fainted but never wiped (ran away) — recover a little instead of battling with a fainted critter
+    var anyAlive = false;
+    critterSave.team.forEach(function (c) { if (c.hp > 0) { anyAlive = true; } });
+    if (!anyAlive) {
+      critterSave.team.forEach(function (c) { c.hp = Math.round(c.maxHp / 4); });
       critterStore();
-      flashNotice("found 2 traps!");
+      flashNotice("your critters recovered a little...");
+      critterRender();
+      return;
+    }
+    var r = Math.random();
+    if (r < 0.1) {
+      critterSave.traps += 1;
+      critterStore();
+      flashNotice("found a trap!");
       critterRender();
       return;
     }
@@ -10976,16 +11007,24 @@ function flairName(name, rec) {
       flashNotice("nothing here... keep exploring!");
       return;
     }
-    // wild encounter!
-    var wild = critterNew(CRITTERS[Math.floor(Math.random() * CRITTERS.length)].id);
-    // scale wild to team strength
+    // wild encounter! (weighted by rarity: 60% common, 30% uncommon, 10% rare)
+    var wild = critterNew(critterWildPick().id);
+    // scale wild to team strength — can now be stronger than you
     var avgLvl = 1;
     critterSave.team.forEach(function (c) { avgLvl += c.lvl; });
     avgLvl = Math.round(avgLvl / critterSave.team.length);
-    wild.lvl = Math.max(1, avgLvl + Math.floor(Math.random() * 3) - 1);
+    wild.lvl = Math.max(1, avgLvl - 1 + Math.floor(Math.random() * 5));
     wild.maxHp = Math.round(wild.maxHp * (1 + (wild.lvl - 1) * 0.15));
     wild.hp = wild.maxHp;
     wild.atk = Math.round(wild.atk * (1 + (wild.lvl - 1) * 0.12));
+    // shiny! (5% — tougher, keeps the tag if caught)
+    if (Math.random() < 0.05) {
+      wild.shiny = true;
+      wild.name = "shiny " + wild.name;
+      wild.maxHp = Math.round(wild.maxHp * 1.1);
+      wild.hp = wild.maxHp;
+      wild.atk = Math.round(wild.atk * 1.1);
+    }
     critterBattle = { wild: wild, myIdx: 0, msg: "a wild " + wild.name + " appeared!" };
     // heal team slightly? no - keep damage
     critterRender();
@@ -10998,7 +11037,10 @@ function flairName(name, rec) {
     var wild = b.wild;
     var mine = critterMyCritter();
     var h = document.createElement("h2");
-    h.textContent = "wild " + wild.name + " (Lv" + wild.lvl + ")";
+    var hTxt = "wild " + wild.name + " (Lv" + wild.lvl + ")";
+    var wbase = critterById(wild.id);
+    if (wbase && wbase.rarity && wbase.rarity !== "common") { hTxt += " [" + wbase.rarity + "]"; }
+    h.textContent = hTxt;
     box.appendChild(h);
     var wp = document.createElement("p");
     wp.textContent = "HP: " + wild.hp + "/" + wild.maxHp + " (" + wild.type + ")";
@@ -11061,7 +11103,9 @@ function flairName(name, rec) {
     }
   }
   function critterEffectiveness(atkType, defType) {
-    return CRITTER_BEATS[atkType] === defType ? 1.5 : 1;
+    if (CRITTER_BEATS[atkType] === defType) { return 1.5; }
+    if (CRITTER_BEATS[defType] === atkType) { return 0.7; }
+    return 1;
   }
   function critterAttack() {
     var b = critterBattle;
@@ -11070,16 +11114,28 @@ function flairName(name, rec) {
     var eff = critterEffectiveness(mine.type, wild.type);
     var dmg = Math.round((mine.atk + Math.random() * 5) * eff);
     wild.hp = Math.max(0, wild.hp - dmg);
-    b.msg = mine.name + " dealt " + dmg + " damage!" + (eff > 1 ? " super effective!" : "");
+    b.msg = mine.name + " dealt " + dmg + " damage!" + (eff > 1 ? " super effective!" : (eff < 1 ? " resisted..." : ""));
     if (wild.hp <= 0) {
       // won!
       var xpGain = 5 + wild.lvl * 2;
       mine.lvl++;
       mine.maxHp = Math.round(mine.maxHp * 1.1);
-      mine.hp = mine.maxHp;
       mine.atk = Math.round(mine.atk * 1.08);
+      // level-ups only heal a little now, not fully
+      mine.hp = Math.min(mine.maxHp, mine.hp + Math.round(mine.maxHp * 0.25));
+      // evolution check
+      var evoMsg = "";
+      var base = critterById(mine.id);
+      if (base && base.evo && !mine.evolved && mine.lvl >= base.evo.lvl) {
+        mine.evolved = true;
+        mine.name = base.evo.name;
+        mine.maxHp += base.evo.hp;
+        mine.atk += base.evo.atk;
+        mine.hp = Math.min(mine.maxHp, mine.hp + base.evo.hp);
+        evoMsg = " " + mine.name + " evolved!!";
+      }
       critterStore();
-      b.msg = "wild " + wild.name + " fainted! " + mine.name + " grew to Lv" + mine.lvl + "! +" + xpGain + " xp";
+      b.msg = "wild " + wild.name + " fainted! " + mine.name + " grew to Lv" + mine.lvl + "! +" + xpGain + " xp" + evoMsg;
       xpWinOnce("critter");
       // heal a bit
       setTimeout(function () { critterBattle = null; critterRender(); }, 1500);
@@ -11090,7 +11146,7 @@ function flairName(name, rec) {
     var weff = critterEffectiveness(wild.type, mine.type);
     var wdam = Math.round((wild.atk + Math.random() * 5) * weff);
     mine.hp = Math.max(0, mine.hp - wdam);
-    b.msg += " wild " + wild.name + " dealt " + wdam + " back!" + (weff > 1 ? " super effective!" : "");
+    b.msg += " wild " + wild.name + " dealt " + wdam + " back!" + (weff > 1 ? " super effective!" : (weff < 1 ? " resisted..." : ""));
     if (mine.hp <= 0) {
       // find next alive
       var next = -1;
@@ -11101,8 +11157,8 @@ function flairName(name, rec) {
         b.msg = "all your critters fainted... you run home!";
         critterStore();
         setTimeout(function () {
-          // revive with half hp
-          critterSave.team.forEach(function (c) { c.hp = Math.round(c.maxHp / 2); });
+          // revive with a quarter hp (tougher than before)
+          critterSave.team.forEach(function (c) { c.hp = Math.round(c.maxHp / 4); });
           critterStore();
           critterBattle = null;
           critterRender();
@@ -11124,9 +11180,14 @@ function flairName(name, rec) {
     var hpFactor = 1 - (wild.hp / wild.maxHp) * 0.6; // lower hp = easier
     var chance = base * hpFactor;
     if (Math.random() < chance) {
-      // caught!
+      // caught! scale stats to the wild's level (they used to stay at level 1)
       var newC = critterNew(wild.id);
       newC.lvl = wild.lvl;
+      newC.maxHp = Math.round(newC.maxHp * (1 + (wild.lvl - 1) * 0.15));
+      newC.hp = newC.maxHp;
+      newC.atk = Math.round(newC.atk * (1 + (wild.lvl - 1) * 0.12));
+      newC.name = wild.name;
+      newC.shiny = !!wild.shiny;
       critterSave.box.push(newC);
       if (critterSave.team.length < 6) {
         critterSave.team.push(newC);
@@ -11135,15 +11196,15 @@ function flairName(name, rec) {
         b.msg = "caught " + wild.name + "! sent to collection!";
       }
       critterStore();
-      xpWinOnce();
       setTimeout(function () { critterBattle = null; critterRender(); }, 1500);
     } else {
       b.msg = "oh no! " + wild.name + " broke free!";
       // wild attacks
       var mine = critterMyCritter();
-      var wdam = Math.round(wild.atk + Math.random() * 5);
+      var weff2 = critterEffectiveness(wild.type, mine.type);
+      var wdam = Math.round((wild.atk + Math.random() * 5) * weff2);
       mine.hp = Math.max(0, mine.hp - wdam);
-      b.msg += " it dealt " + wdam + " damage!";
+      b.msg += " it dealt " + wdam + " damage!" + (weff2 < 1 ? " resisted..." : "");
       if (mine.hp <= 0) {
         b.msg += " " + mine.name + " fainted!";
       }
@@ -11263,9 +11324,19 @@ function flairName(name, rec) {
           }
           var meta = document.createElement("p");
           meta.style.fontSize = "14px"; meta.style.color = "#555555";
-          meta.textContent = total + " vote" + (total === 1 ? "" : "s");
-          if (p.pinned) { meta.textContent = "[pinned] " + meta.textContent; }
+          var metaBase = (p.pinned ? "[pinned] " : "") + total + " vote" + (total === 1 ? "" : "s");
+          meta.textContent = metaBase;
           wrap.appendChild(meta);
+          // show who posted the poll (old polls only stored the uid)
+          (function (m, base, poll) {
+            function apply(nm) { m.textContent = "posted by " + nm + " · " + base; }
+            if (poll.createdByName) { apply(poll.createdByName); }
+            else if (poll.createdBy) {
+              db.ref("users/" + poll.createdBy + "/name").once("value", function (nsnap) {
+                if (nsnap.val()) { apply(nsnap.val()); }
+              });
+            }
+          })(meta, metaBase, p);
           // pin button for chickn (founder)
           (function (pollId, isPinned) {
             db.ref("users/" + myUid() + "/name").once("value", function (nsnap) {
@@ -11861,12 +11932,15 @@ function flairName(name, rec) {
     var msg = document.getElementById("poll-msg");
     if (!q || opts.length < 2) { msg.textContent = "need a question and at least 2 options."; return; }
     var ref = db.ref("polls").push();
-    ref.set({ question: q, options: opts, votes: {}, createdBy: myUid(), createdAt: Date.now() }, function (err) {
+    db.ref("users/" + myUid() + "/name").once("value", function (nsnap) {
+      var nm = nsnap.val() || "someone";
+      ref.set({ question: q, options: opts, votes: {}, createdBy: myUid(), createdByName: nm, createdAt: Date.now() }, function (err) {
       if (err) { msg.textContent = "could not post poll."; return; }
       db.ref("pollsMeta/lastPollAt").set(Date.now());
       document.getElementById("poll-q").value = "";
       for (var j = 1; j <= 4; j++) { document.getElementById("poll-opt" + j).value = ""; }
       msg.textContent = "poll posted! everyone will see a notification.";
+      });
     });
   };
 
