@@ -124,11 +124,13 @@
   #alc-mix button.sel { background: #ffffff; color: #111111; }
   body.dark #alc-mix button.sel { background: #111111; color: #ffffff; }
   #notif-wrap {
-    position: fixed;
-    top: 60px;
-    right: 10px;
-    z-index: 9999;
+    position: fixed !important;
+    top: 60px !important;
+    right: 10px !important;
+    z-index: 99999 !important;
     max-width: 300px;
+    display: block !important;
+    pointer-events: auto !important;
   }
   .notif {
     background: #111111;
@@ -477,7 +479,7 @@
 <!-- ALL APPS -->
 <div id="apps-screen" class="hidden">
   <h1>all apps</h1>
-  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-poxel-btn" class="secondary">poxel</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
+  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-poxel-btn" class="secondary">poxel</button><button id="apps-flip-btn" class="secondary">flipbook</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
 </div>
 
 <!-- DONATE -->
@@ -848,6 +850,43 @@
   <h2>my gallery</h2>
   <div id="poxel-gallery" style="min-height:60px;border:1px solid #ccc;padding:8px;margin:8px 0"></div>
   <button id="poxel-back-btn" class="secondary">back</button>
+</div>
+
+<!-- FLIPBOOK -->
+<div id="flipbook-screen" class="hidden">
+  <h1>flipbook</h1>
+  <p style="font-size:14px">draw frames, then play them as an animation! share to chat!</p>
+  <div style="margin:8px 0">
+    <span style="font-size:14px">size: </span>
+    <button id="flip-size-8" class="mini secondary">8x8</button>
+    <button id="flip-size-16" class="mini secondary">16x16</button>
+    <span style="font-size:14px;margin-left:12px;">speed: </span>
+    <input id="flip-fps" type="range" min="1" max="12" value="6" style="width:80px;vertical-align:middle;">
+    <span id="flip-fps-label" style="font-size:14px;">6 fps</span>
+  </div>
+  <div id="flip-palette"></div>
+  <div id="flip-canvas-wrap" style="text-align:center;margin:8px 0;position:relative;">
+    <div id="flip-grid" style="display:inline-block;"></div>
+  </div>
+  <div style="text-align:center;margin:8px 0;">
+    <button id="flip-play-btn">play</button>
+    <button id="flip-onion-btn" class="mini secondary">onion: off</button>
+    <button id="flip-clear-btn" class="mini secondary">clear frame</button>
+  </div>
+  <h2>frames <span id="flip-count" style="font-size:14px;"></span></h2>
+  <div id="flip-timeline" style="display:flex;gap:4px;overflow-x:auto;padding:8px;border:1px solid #ccc;min-height:60px;"></div>
+  <div style="margin:8px 0;">
+    <button id="flip-add-btn" class="secondary">+ add frame</button>
+    <button id="flip-dup-btn" class="secondary">duplicate frame</button>
+    <button id="flip-del-btn" class="secondary">delete frame</button>
+  </div>
+  <div style="margin:8px 0;">
+    <button id="flip-save-btn">save flipbook</button>
+    <button id="flip-send-btn" class="secondary">send to chat</button>
+  </div>
+  <h2>my flipbooks</h2>
+  <div id="flip-gallery"></div>
+  <button id="flip-back-btn" class="secondary">back</button>
 </div>
 
 <!-- CHAT -->
@@ -1547,7 +1586,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -3306,10 +3345,12 @@
   function buildPoxelGrid() {
     var grid = document.getElementById("poxel-grid");
     grid.innerHTML = "";
-    var cellPx = poxelSize <= 8 ? 24 : (poxelSize <= 16 ? 18 : 10);
+    // bigger cells - almost full screen width
+    var cellPx = poxelSize <= 8 ? 44 : (poxelSize <= 16 ? 22 : 11);
     grid.style.display = "grid";
     grid.style.gridTemplateColumns = "repeat(" + poxelSize + ", " + cellPx + "px)";
     grid.style.justifyContent = "center";
+    grid.style.touchAction = "none";
     for (var i = 0; i < poxelSize * poxelSize; i++) {
       (function (i) {
         var cell = document.createElement("div");
@@ -3317,6 +3358,7 @@
         cell.style.height = cellPx + "px";
         cell.style.border = "1px solid #ccc";
         cell.style.boxSizing = "border-box";
+        cell.setAttribute("data-px", i);
         var ci = poxelData.charAt(i) || "0";
         cell.style.background = PALETTE[parseInt(ci, 10)] || PALETTE[0];
         var paint = function () {
@@ -3326,10 +3368,29 @@
         };
         cell.onmousedown = function (e) { poxelPainting = true; paint(); if (e && e.preventDefault) { e.preventDefault(); } };
         cell.onmouseover = function () { if (poxelPainting) { paint(); } };
-        cell.ontouchstart = function (e) { paint(); if (e && e.preventDefault) { e.preventDefault(); } };
+        cell.ontouchstart = function (e) { poxelPainting = true; paint(); if (e && e.preventDefault) { e.preventDefault(); } };
         grid.appendChild(cell);
       })(i);
     }
+    // touch drag painting - find cell under finger
+    grid.ontouchmove = function (e) {
+      if (e && e.preventDefault) { e.preventDefault(); }
+      var t = e.touches[0];
+      if (!t) return;
+      var el = document.elementFromPoint(t.clientX, t.clientY);
+      if (el && el.getAttribute) {
+        var idx = el.getAttribute("data-px");
+        if (idx !== null && idx !== undefined && idx !== "") {
+          var i2 = parseInt(idx, 10);
+          var col = (poxelColor === "e") ? "0" : poxelColor;
+          if (poxelData.charAt(i2) !== col) {
+            poxelData = poxelData.substring(0, i2) + col + poxelData.substring(i2 + 1);
+            el.style.background = PALETTE[parseInt(col, 10)];
+          }
+        }
+      }
+    };
+    grid.ontouchend = function () { poxelPainting = false; };
   }
   function buildPoxelPalette() {
     var pal = document.getElementById("poxel-palette");
@@ -3423,6 +3484,289 @@
     showScreen("poxel-screen");
   }
   document.getElementById("apps-poxel-btn").onclick = function () { enterPoxel(); };
+  document.getElementById("apps-flip-btn").onclick = function () { enterFlipbook(); };
+
+  /* ---------- flipbook animation studio ---------- */
+  var flipSize = 16;
+  var flipFrames = [];
+  var flipCur = 0;
+  var flipColor = "1";
+  var flipPainting = false;
+  var flipPlaying = false;
+  var flipPlayTimer = null;
+  var flipFps = 6;
+  var flipOnion = false;
+  function flipBlank() {
+    var s = "";
+    for (var i = 0; i < flipSize * flipSize; i++) s += "0";
+    return s;
+  }
+  function flipEnsureFrame() {
+    if (!flipFrames.length) { flipFrames.push(flipBlank()); flipCur = 0; }
+    if (flipCur >= flipFrames.length) flipCur = flipFrames.length - 1;
+  }
+  function buildFlipGrid() {
+    flipEnsureFrame();
+    var grid = document.getElementById("flip-grid");
+    grid.innerHTML = "";
+    var cellPx = flipSize <= 8 ? 36 : 20;
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(" + flipSize + ", " + cellPx + "px)";
+    grid.style.touchAction = "none";
+    grid.style.position = "relative";
+    var data = flipFrames[flipCur];
+    for (var i = 0; i < flipSize * flipSize; i++) {
+      (function (i) {
+        var cell = document.createElement("div");
+        cell.style.width = cellPx + "px";
+        cell.style.height = cellPx + "px";
+        cell.style.border = "1px solid #ccc";
+        cell.style.boxSizing = "border-box";
+        cell.setAttribute("data-fpx", i);
+        var ci = data.charAt(i) || "0";
+        // onion skin: show prev frame faintly under empty cells
+        if (ci === "0" && flipOnion && flipCur > 0) {
+          var pc = flipFrames[flipCur - 1].charAt(i) || "0";
+          if (pc !== "0") {
+            cell.style.background = PALETTE[parseInt(pc, 10)] || PALETTE[0];
+            cell.style.opacity = "0.3";
+          } else {
+            cell.style.background = PALETTE[0];
+          }
+        } else {
+          cell.style.background = PALETTE[parseInt(ci, 10)] || PALETTE[0];
+        }
+        var paint = function () {
+          var col = (flipColor === "e") ? "0" : flipColor;
+          var d = flipFrames[flipCur];
+          flipFrames[flipCur] = d.substring(0, i) + col + d.substring(i + 1);
+          cell.style.background = PALETTE[parseInt(col, 10)];
+          cell.style.opacity = "1";
+          renderFlipTimeline();
+        };
+        cell.onmousedown = function (e) { if (flipPlaying) flipStop(); flipPainting = true; paint(); if (e && e.preventDefault) e.preventDefault(); };
+        cell.onmouseover = function () { if (flipPainting) paint(); };
+        cell.ontouchstart = function (e) { if (flipPlaying) flipStop(); flipPainting = true; paint(); if (e && e.preventDefault) e.preventDefault(); };
+        grid.appendChild(cell);
+      })(i);
+    }
+    grid.ontouchmove = function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      var t = e.touches[0]; if (!t) return;
+      var el = document.elementFromPoint(t.clientX, t.clientY);
+      if (el && el.getAttribute) {
+        var idx = el.getAttribute("data-fpx");
+        if (idx !== null && idx !== "" && idx !== undefined) {
+          var i2 = parseInt(idx, 10);
+          var col = (flipColor === "e") ? "0" : flipColor;
+          var d = flipFrames[flipCur];
+          if (d.charAt(i2) !== col) {
+            flipFrames[flipCur] = d.substring(0, i2) + col + d.substring(i2 + 1);
+            el.style.background = PALETTE[parseInt(col, 10)];
+            el.style.opacity = "1";
+          }
+        }
+      }
+    };
+    grid.ontouchend = function () { flipPainting = false; renderFlipTimeline(); };
+  }
+  function buildFlipPalette() {
+    var pal = document.getElementById("flip-palette");
+    pal.innerHTML = "";
+    var labels = ["white", "gray", "dark", "black", "erase"];
+    for (var c = 0; c < 5; c++) {
+      (function (c) {
+        var key = c < 4 ? String(c) : "e";
+        var s = document.createElement("div");
+        s.style.display = "inline-block"; s.style.width = "32px"; s.style.height = "32px";
+        s.style.margin = "2px"; s.style.border = "2px solid transparent";
+        if (flipColor === key) s.style.borderColor = "#000";
+        if (c < 4) s.style.background = PALETTE[c];
+        else { s.style.background = "#fff"; s.textContent = "X"; s.style.textAlign = "center"; s.style.lineHeight = "32px"; }
+        s.title = labels[c];
+        s.onclick = function () { flipColor = key; buildFlipPalette(); };
+        pal.appendChild(s);
+      })(c);
+    }
+  }
+  function renderFlipTimeline() {
+    var tl = document.getElementById("flip-timeline");
+    tl.innerHTML = "";
+    document.getElementById("flip-count").textContent = "(" + flipFrames.length + " frames)";
+    for (var f = 0; f < flipFrames.length; f++) {
+      (function (f) {
+        var th = document.createElement("div");
+        th.style.flexShrink = "0"; th.style.cursor = "pointer";
+        th.style.border = f === flipCur ? "3px solid #000" : "1px solid #ccc";
+        th.style.padding = "2px";
+        var img = document.createElement("canvas");
+        var sz = flipSize;
+        img.width = sz; img.height = sz;
+        img.style.width = "48px"; img.style.height = "48px";
+        img.style.imageRendering = "pixelated";
+        var ctx = img.getContext("2d");
+        var d = flipFrames[f];
+        for (var y = 0; y < sz; y++) for (var x = 0; x < sz; x++) {
+          ctx.fillStyle = PALETTE[parseInt(d.charAt(y * sz + x) || "0", 10)] || "#fff";
+          ctx.fillRect(x, y, 1, 1);
+        }
+        th.appendChild(img);
+        var lbl = document.createElement("div");
+        lbl.style.fontSize = "10px"; lbl.style.textAlign = "center"; lbl.textContent = f + 1;
+        th.appendChild(lbl);
+        th.onclick = function () { if (flipPlaying) flipStop(); flipCur = f; buildFlipGrid(); renderFlipTimeline(); };
+        tl.appendChild(th);
+      })(f);
+    }
+  }
+  function flipPlay() {
+    if (flipFrames.length < 2) return;
+    flipPlaying = true;
+    document.getElementById("flip-play-btn").textContent = "stop";
+    var grid = document.getElementById("flip-grid");
+    var idx = 0;
+    var showFrame = function () {
+      var d = flipFrames[idx % flipFrames.length];
+      var cells = grid.children;
+      for (var i = 0; i < cells.length && i < d.length; i++) {
+        cells[i].style.background = PALETTE[parseInt(d.charAt(i) || "0", 10)] || PALETTE[0];
+        cells[i].style.opacity = "1";
+      }
+      idx++;
+    };
+    showFrame();
+    flipPlayTimer = setInterval(showFrame, 1000 / flipFps);
+  }
+  function flipStop() {
+    flipPlaying = false;
+    if (flipPlayTimer) clearInterval(flipPlayTimer);
+    flipPlayTimer = null;
+    document.getElementById("flip-play-btn").textContent = "play";
+    buildFlipGrid();
+  }
+  function flipSetSize(s) {
+    if (flipPlaying) flipStop();
+    flipSize = s;
+    flipFrames = [flipBlank()];
+    flipCur = 0;
+    buildFlipGrid(); renderFlipTimeline();
+    document.getElementById("flip-size-8").textContent = s === 8 ? "8x8 \u2713" : "8x8";
+    document.getElementById("flip-size-16").textContent = s === 16 ? "16x16 \u2713" : "16x16";
+  }
+  function getFlipGallery() {
+    try { return JSON.parse(localStorage.getItem("flipbook_gallery") || "[]"); } catch (e) { return []; }
+  }
+  function saveFlipGallery(g) {
+    try { localStorage.setItem("flipbook_gallery", JSON.stringify(g)); } catch (e) {}
+  }
+  function renderFlipGallery() {
+    var box = document.getElementById("flip-gallery");
+    box.innerHTML = "";
+    var g = getFlipGallery();
+    if (!g.length) { box.innerHTML = "<p>no saved flipbooks yet</p>"; return; }
+    for (var i = g.length - 1; i >= 0; i--) {
+      (function (idx) {
+        var item = g[idx];
+        var wrap = document.createElement("div");
+        wrap.style.display = "inline-block"; wrap.style.margin = "4px"; wrap.style.textAlign = "center";
+        wrap.style.border = "1px solid #ccc"; wrap.style.padding = "4px";
+        var cv = document.createElement("canvas");
+        cv.width = item.size; cv.height = item.size;
+        cv.style.width = "64px"; cv.style.height = "64px"; cv.style.imageRendering = "pixelated";
+        wrap.appendChild(cv);
+        var ctx = cv.getContext("2d");
+        var fi = 0;
+        var anim = setInterval(function () {
+          if (!cv.parentNode) { clearInterval(anim); return; }
+          var d = item.frames[fi % item.frames.length];
+          for (var y = 0; y < item.size; y++) for (var x = 0; x < item.size; x++) {
+            ctx.fillStyle = PALETTE[parseInt(d.charAt(y * item.size + x) || "0", 10)] || "#fff";
+            ctx.fillRect(x, y, 1, 1);
+          }
+          fi++;
+        }, 1000 / (item.fps || 6));
+        var lbl = document.createElement("div");
+        lbl.style.fontSize = "12px"; lbl.textContent = item.name + " (" + item.frames.length + "f)";
+        wrap.appendChild(lbl);
+        var loadBtn = document.createElement("button");
+        loadBtn.className = "mini secondary"; loadBtn.textContent = "edit"; loadBtn.style.fontSize = "12px";
+        loadBtn.onclick = function () {
+          if (flipPlaying) flipStop();
+          flipSize = item.size; flipFrames = item.frames.slice(); flipCur = 0; flipFps = item.fps || 6;
+          document.getElementById("flip-fps").value = flipFps;
+          document.getElementById("flip-fps-label").textContent = flipFps + " fps";
+          flipSetSize(flipSize);
+        };
+        wrap.appendChild(loadBtn);
+        var delBtn = document.createElement("button");
+        delBtn.className = "mini secondary"; delBtn.textContent = "x"; delBtn.style.fontSize = "12px";
+        delBtn.onclick = function () { var gg = getFlipGallery(); gg.splice(idx, 1); saveFlipGallery(gg); renderFlipGallery(); };
+        wrap.appendChild(delBtn);
+        box.appendChild(wrap);
+      })(i);
+    }
+  }
+  function enterFlipbook() {
+    flipSetSize(16);
+    buildFlipPalette();
+    renderFlipGallery();
+    document.getElementById("flip-fps").value = flipFps;
+    document.getElementById("flip-fps-label").textContent = flipFps + " fps";
+    showScreen("flipbook-screen");
+  }
+  document.getElementById("flip-size-8").onclick = function () { flipSetSize(8); };
+  document.getElementById("flip-size-16").onclick = function () { flipSetSize(16); };
+  document.getElementById("flip-fps").oninput = function () {
+    flipFps = parseInt(this.value, 10) || 6;
+    document.getElementById("flip-fps-label").textContent = flipFps + " fps";
+    if (flipPlaying) { flipStop(); flipPlay(); }
+  };
+  document.getElementById("flip-play-btn").onclick = function () { flipPlaying ? flipStop() : flipPlay(); };
+  document.getElementById("flip-onion-btn").onclick = function () {
+    flipOnion = !flipOnion;
+    this.textContent = "onion: " + (flipOnion ? "on" : "off");
+    buildFlipGrid();
+  };
+  document.getElementById("flip-clear-btn").onclick = function () { flipFrames[flipCur] = flipBlank(); buildFlipGrid(); renderFlipTimeline(); };
+  document.getElementById("flip-add-btn").onclick = function () {
+    if (flipFrames.length >= 24) return;
+    flipFrames.splice(flipCur + 1, 0, flipBlank());
+    flipCur++;
+    buildFlipGrid(); renderFlipTimeline();
+  };
+  document.getElementById("flip-dup-btn").onclick = function () {
+    if (flipFrames.length >= 24) return;
+    flipFrames.splice(flipCur + 1, 0, flipFrames[flipCur]);
+    flipCur++;
+    buildFlipGrid(); renderFlipTimeline();
+  };
+  document.getElementById("flip-del-btn").onclick = function () {
+    if (flipFrames.length <= 1) { flipFrames[0] = flipBlank(); }
+    else { flipFrames.splice(flipCur, 1); if (flipCur >= flipFrames.length) flipCur = flipFrames.length - 1; }
+    buildFlipGrid(); renderFlipTimeline();
+  };
+  document.getElementById("flip-save-btn").onclick = function () {
+    var name = prompt("name your flipbook:", "my animation") || "my animation";
+    var g = getFlipGallery();
+    g.push({ name: name.substring(0, 30), size: flipSize, frames: flipFrames.slice(), fps: flipFps, at: Date.now() });
+    saveFlipGallery(g);
+    renderFlipGallery();
+  };
+  document.getElementById("flip-send-btn").onclick = function () {
+    // send to current chat room
+    if (!messagesRef) { alert("open a chat room first, then send!"); return; }
+    var u = auth.currentUser;
+    if (!u) return;
+    var msg = {
+      name: displayName(), uid: u.uid, ts: Date.now(),
+      text: "[flipbook]",
+      flipbook: { size: flipSize, frames: flipFrames.slice(0, 12), fps: flipFps }
+    };
+    messagesRef.push(msg);
+    showScreen("chat-screen");
+  };
+  document.getElementById("flip-back-btn").onclick = function () { if (flipPlaying) flipStop(); showScreen("apps-screen"); };
+  document.addEventListener("mouseup", function () { flipPainting = false; });
   document.getElementById("poxel-size-8").onclick = function () { poxelSetSize(8); };
   document.getElementById("poxel-size-16").onclick = function () { poxelSetSize(16); };
   document.getElementById("poxel-size-32").onclick = function () { poxelSetSize(32); };
@@ -3750,6 +4094,46 @@
       wrap.appendChild(rq);
     }
     wrap.appendChild(renderBody(censor(m.text || "")));
+    // flipbook animation - auto-plays
+    if (m.flipbook && m.flipbook.frames && m.flipbook.frames.length) {
+      (function (fb) {
+        var fwrap = document.createElement("div");
+        fwrap.style.margin = "8px 0";
+        var cv = document.createElement("canvas");
+        var sz = fb.size === 8 ? 8 : 16;
+        cv.width = sz; cv.height = sz;
+        cv.style.width = "120px"; cv.style.height = "120px";
+        cv.style.imageRendering = "pixelated";
+        cv.style.border = "2px solid #333";
+        cv.style.cursor = "pointer";
+        fwrap.appendChild(cv);
+        var ctx = cv.getContext("2d");
+        var fi = 0;
+        var drawFlip = function () {
+          var d = fb.frames[fi % fb.frames.length];
+          for (var y = 0; y < sz; y++) for (var x = 0; x < sz; x++) {
+            var pal = ["#ffffff", "#bbbbbb", "#666666", "#111111"];
+            ctx.fillStyle = pal[parseInt(d.charAt(y * sz + x) || "0", 10)] || "#fff";
+            ctx.fillRect(x, y, 1, 1);
+          }
+          fi++;
+        };
+        drawFlip();
+        var fps = Math.min(Math.max(fb.fps || 6, 1), 12);
+        var timer = setInterval(function () {
+          if (!cv.parentNode) { clearInterval(timer); return; }
+          drawFlip();
+        }, 1000 / fps);
+        // tap to pause/resume
+        var paused = false;
+        cv.onclick = function () {
+          paused = !paused;
+          if (paused) { clearInterval(timer); }
+          else { timer = setInterval(function () { if (!cv.parentNode) { clearInterval(timer); return; } drawFlip(); }, 1000 / fps); }
+        };
+        wrap.appendChild(fwrap);
+      })(m.flipbook);
+    }
 
     var rest = document.createElement("div");
     rest.innerHTML = '<div class="reactions" style="display:none"></div>' +
@@ -4448,6 +4832,18 @@
   /* ---------- popup notifications ---------- */
   function notify(title, msg, onclick) {
     var wrap = document.getElementById("notif-wrap");
+    if (!wrap) {
+      // recreate if missing
+      wrap = document.createElement("div");
+      wrap.id = "notif-wrap";
+      document.body.appendChild(wrap);
+    }
+    // force visibility
+    wrap.style.display = "block";
+    wrap.style.position = "fixed";
+    wrap.style.zIndex = "99999";
+    wrap.style.top = "60px";
+    wrap.style.right = "10px";
     var d = document.createElement("div");
     d.className = "notif";
     var t = document.createElement("div");
@@ -11301,6 +11697,17 @@ function flairName(name, rec) {
       watchMentions();
       startNotifyWatchers();
       checkMod();
+      // heartbeat: restart notification watchers every 60s to keep them alive everywhere
+      if (window._notifHeartbeat) { clearInterval(window._notifHeartbeat); }
+      window._notifHeartbeat = setInterval(function () {
+        try {
+          if (auth.currentUser) {
+            watchDmRequests();
+            watchDmMessages();
+            startNotifyWatchers();
+          }
+        } catch (e) {}
+      }, 60000);
       startPresence();
       checkXpGrants();
       closeSignin();
