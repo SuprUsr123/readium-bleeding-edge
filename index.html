@@ -389,6 +389,13 @@
   .ptheme-stripes { background: repeating-linear-gradient(45deg, #ffffff, #ffffff 6px, #dddddd 6px, #dddddd 12px) !important; }
   .ptheme-grid { background-image: linear-gradient(#cccccc 1px, transparent 1px), linear-gradient(90deg, #cccccc 1px, transparent 1px) !important; background-size: 12px 12px !important; }
   .ptheme-checker { background-image: linear-gradient(45deg, #dddddd 25%, transparent 25%), linear-gradient(-45deg, #dddddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #dddddd 75%), linear-gradient(-45deg, transparent 75%, #dddddd 75%) !important; background-size: 16px 16px !important; background-position: 0 0, 0 8px, 8px -8px, -8px 0 !important; }
+  /* personal space themes - CSS only, no graphics */
+  .space-default { background: #ffffff !important; }
+  .space-starry { background-color: #0a0a2e !important; background-image: radial-gradient(#ffffff 1.2px, transparent 1.2px), radial-gradient(#ccccff 1px, transparent 1px) !important; background-size: 42px 42px, 26px 26px !important; background-position: 0 0, 13px 19px !important; color: #ffffff !important; }
+  .space-ocean { background: linear-gradient(#2a9fd8, #0a3a5c) !important; color: #ffffff !important; }
+  .space-sunset { background: linear-gradient(#ffb35c, #ff5e78) !important; }
+  #space-inner { border: 2px solid #111; margin: 8px 0; }
+  #space-inner h1, #space-inner h2 { margin-left: 4px; }
   .theme-swatch { display: inline-block; width: 44px; height: 44px; border: 2px solid #000; margin: 4px; cursor: pointer; vertical-align: middle; }
   .theme-swatch.sel { outline: 3px solid #000; }
   .pet-pick { display: inline-block; margin: 4px; cursor: pointer; border: 2px solid #000; padding: 4px; vertical-align: middle; background: #fff; }
@@ -767,9 +774,39 @@
   <button id="save-profile-btn">save profile</button>
   <div id="profile-ok"></div>
   <button id="settings-btn" class="secondary">settings</button>
+  <button id="profile-space-btn" class="secondary">my space</button>
   <h2>following</h2>
   <div id="following-list"><p>not following anyone yet</p></div>
   <button id="profile-home-btn" class="secondary">home</button>
+</div>
+
+<!-- PERSONAL SPACE -->
+<div id="space-screen" class="hidden">
+  <div id="space-inner" class="space-default" style="padding:12px;min-height:60vh;">
+    <div style="text-align:center;">
+      <div id="space-pfp"></div>
+      <h1 id="space-name">space</h1>
+    </div>
+    <h2>about</h2>
+    <p id="space-bio">no bio yet</p>
+    <h2>stats</h2>
+    <div id="space-stats"><p>loading...</p></div>
+    <h2>badges</h2>
+    <div id="space-badges"><p>no badges yet</p></div>
+    <button id="space-edit-btn" class="secondary hidden">edit my space</button>
+    <div id="space-editor" class="hidden">
+      <h2>edit my space</h2>
+      <label for="space-bio-input">about me</label>
+      <textarea id="space-bio-input" maxlength="300" placeholder="tell people about you..."></textarea>
+      <h2>theme</h2>
+      <div id="space-theme-picker"></div>
+      <p id="space-theme-note" style="font-size:14px"></p>
+      <button id="space-save-btn">save space</button>
+      <div id="space-ok"></div>
+    </div>
+    <br>
+    <button id="space-back-btn" class="secondary">back</button>
+  </div>
 </div>
 
 <!-- SETTINGS -->
@@ -1268,6 +1305,7 @@
     <button id="pp-follow-btn" class="secondary">follow</button>
     <div id="pp-badges" style="margin:8px 0;"></div>
     <button id="pp-dm-btn" class="secondary">dm</button>
+    <button id="pp-space-btn" class="secondary">visit space</button>
     <button id="pp-tip-btn" class="secondary">tip xp</button>
     <button id="pp-close-btn" class="secondary">close</button>
   </div>
@@ -1614,7 +1652,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "space-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -3434,13 +3472,12 @@
     grid.ontouchend = function () { poxelPainting = false; };
   }
   // document-level touch drag for poxel - works on Kindle
+  // only blocks scrolling when actually drawing on the grid
   document.addEventListener("touchmove", function (e) {
     var grid = document.getElementById("poxel-grid");
-    if (!grid || grid.className === "hidden" || !poxelPainting) return;
-    // check if we're on the poxel screen
+    if (!grid || !poxelPainting) return;
     var ps = document.getElementById("poxel-screen");
     if (!ps || ps.className === "hidden") return;
-    if (e && e.preventDefault) { try { e.preventDefault(); } catch (err) {} }
     var t = e.touches[0];
     if (!t) return;
     var el = null;
@@ -3448,6 +3485,7 @@
     if (el && el.getAttribute) {
       var idx = el.getAttribute("data-px");
       if (idx !== null && idx !== "" && idx !== undefined) {
+        if (e && e.preventDefault) { try { e.preventDefault(); } catch (err) {} }
         var i2 = parseInt(idx, 10);
         if (!isNaN(i2) && i2 >= 0 && i2 < poxelData.length) {
           var col = (poxelColor === "e") ? "0" : poxelColor;
@@ -3845,19 +3883,25 @@
     grid.ontouchend = function () { flipPainting = false; renderFlipTimeline(); };
   }
   // document-level touch drag for flipbook - works on Kindle
+  // only blocks scrolling when actually drawing on the grid
+  document.addEventListener("touchend", function () { flipPainting = false; });
+  document.addEventListener("touchcancel", function () { flipPainting = false; });
   document.addEventListener("touchmove", function (e) {
     var grid = document.getElementById("flip-grid");
     if (!grid || !flipPainting) return;
     var fs = document.getElementById("flipbook-screen");
     if (!fs || fs.className === "hidden") return;
-    if (e && e.preventDefault) { try { e.preventDefault(); } catch (err) {} }
     var t = e.touches[0];
     if (!t) return;
     var el = null;
     try { el = document.elementFromPoint(t.clientX, t.clientY); } catch (err) { return; }
+    // only prevent scrolling if we're actually over a grid cell
+    var isOverGrid = false;
     if (el && el.getAttribute) {
       var idx = el.getAttribute("data-fpx");
       if (idx !== null && idx !== "" && idx !== undefined) {
+        isOverGrid = true;
+        if (e && e.preventDefault) { try { e.preventDefault(); } catch (err) {} }
         var i2 = parseInt(idx, 10);
         if (!isNaN(i2) && flipFrames[flipCur]) {
           var col = (flipColor === "e") ? "0" : flipColor;
@@ -3870,6 +3914,7 @@
         }
       }
     }
+    // if not over grid, let the scroll happen (don't preventDefault)
   }, { passive: false });
   function buildFlipPalette() {
     var pal = document.getElementById("flip-palette");
@@ -3945,8 +3990,16 @@
     document.getElementById("flip-play-btn").textContent = "play";
     buildFlipGrid();
   }
-  function flipSetSize(s) {
+  function flipSetSize(s, force) {
     if (flipPlaying) flipStop();
+    // warn if switching sizes will wipe drawn frames
+    if (!force && s !== flipSize && flipFrames.length) {
+      var hasDrawn = false;
+      for (var i = 0; i < flipFrames.length; i++) {
+        if (/[123]/.test(flipFrames[i])) { hasDrawn = true; break; }
+      }
+      if (hasDrawn && !confirm("switching size will clear your frames. continue?")) return;
+    }
     flipSize = s;
     flipFrames = [flipBlank()];
     flipCur = 0;
@@ -3993,10 +4046,16 @@
         loadBtn.className = "mini secondary"; loadBtn.textContent = "edit"; loadBtn.style.fontSize = "12px";
         loadBtn.onclick = function () {
           if (flipPlaying) flipStop();
-          flipSize = item.size; flipFrames = item.frames.slice(); flipCur = 0; flipFps = item.fps || 6;
+          flipSize = item.size;
+          flipFrames = item.frames.slice();
+          flipCur = 0;
+          flipFps = item.fps || 6;
           document.getElementById("flip-fps").value = flipFps;
           document.getElementById("flip-fps-label").textContent = flipFps + " fps";
-          flipSetSize(flipSize);
+          // don't call flipSetSize (it wipes frames) - just rebuild UI
+          document.getElementById("flip-size-8").textContent = flipSize === 8 ? "8x8 \u2713" : "8x8";
+          document.getElementById("flip-size-16").textContent = flipSize === 16 ? "16x16 \u2713" : "16x16";
+          buildFlipGrid(); renderFlipTimeline();
         };
         wrap.appendChild(loadBtn);
         var delBtn = document.createElement("button");
@@ -4008,7 +4067,7 @@
     }
   }
   function enterFlipbook() {
-    flipSetSize(16);
+    flipSetSize(16, true);
     buildFlipPalette();
     renderFlipGallery();
     document.getElementById("flip-fps").value = flipFps;
@@ -4054,17 +4113,32 @@
     renderFlipGallery();
   };
   document.getElementById("flip-send-btn").onclick = function () {
-    // send to current chat room
-    if (!messagesRef) { alert("open a chat room first, then send!"); return; }
     var u = auth.currentUser;
-    if (!u) return;
-    var msg = {
-      name: displayName(), uid: u.uid, ts: Date.now(),
-      text: "[flipbook]",
-      flipbook: { size: flipSize, frames: flipFrames.slice(0, 12), fps: flipFps }
-    };
-    messagesRef.push(msg);
-    showScreen("chat-screen");
+    if (!u) { alert("sign in first!"); return; }
+    // let user pick a room to send to
+    try {
+      db.ref("rooms").once("value", function (snap) {
+        var rooms = snap.val() || {};
+        var rids = Object.keys(rooms);
+        if (!rids.length) { alert("no rooms found!"); return; }
+        // build a simple picker
+        var names = rids.map(function (rid, idx) { return (idx + 1) + ". " + (rooms[rid].name || "room"); });
+        var choice = prompt("send flipbook to which room?\n" + names.slice(0, 10).join("\n") + "\n\nenter number:");
+        if (!choice) return;
+        var idx = parseInt(choice, 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= rids.length) { alert("invalid choice"); return; }
+        var rid = rids[idx];
+        var msg = {
+          name: displayName(), uid: u.uid, ts: Date.now(),
+          text: "[flipbook]",
+          flipbook: { size: flipSize, frames: flipFrames.slice(0, 12), fps: flipFps }
+        };
+        db.ref("rooms/" + rid + "/messages").push(msg, function (err) {
+          if (err) { alert("failed to send: " + err.message); }
+          else { alert("flipbook sent to " + (rooms[rid].name || "room") + "!"); }
+        });
+      });
+    } catch (e) { alert("error: " + e.message); }
   };
   document.getElementById("flip-back-btn").onclick = function () { if (flipPlaying) flipStop(); showScreen("apps-screen"); };
   document.addEventListener("mouseup", function () { flipPainting = false; });
@@ -4170,6 +4244,120 @@
     document.getElementById("dm-lookup").value = name;
     document.getElementById("dm-search-btn").onclick();
   };
+
+  /* ---------- personal spaces ---------- */
+  var currentSpaceUid = null;
+  var spaceEditTheme = "default";
+  function enterSpace(uid) {
+    if (!uid) { return; }
+    currentSpaceUid = uid;
+    try { document.getElementById("profile-popup").className = "hidden"; } catch (e) {}
+    ppUid = null;
+    db.ref("users/" + uid).once("value", function (usnap) {
+      var urec = usnap.val() || {};
+      db.ref("userSpaces/" + uid).once("value", function (ssnap) {
+        renderSpace(uid, urec, ssnap.val() || {});
+        showScreen("space-screen");
+      });
+    });
+  }
+  function renderSpace(uid, urec, sdata) {
+    var me = myUid();
+    var nm = urec.name || "user";
+    document.getElementById("space-name").textContent = nm + "'s space";
+    var pfpBox = document.getElementById("space-pfp");
+    pfpBox.innerHTML = "";
+    pfpBox.appendChild(pfpImg(urec.pfp || blankPfp(), 4));
+    // theme background
+    var tdef = spaceThemeDefFor(sdata.theme) || spaceThemeDefFor("default");
+    document.getElementById("space-inner").className = tdef.cls;
+    document.getElementById("space-bio").textContent = sdata.bio || "no bio yet";
+    // stats
+    var statsBox = document.getElementById("space-stats");
+    statsBox.innerHTML = "<p>loading...</p>";
+    db.ref("users/" + uid + "/xp").once("value", function (xsnap) {
+      var xp = xsnap.val() || 0;
+      statsBox.innerHTML = "<p>xp: <b>" + xp + "</b></p>";
+    });
+    // badges
+    var bBox = document.getElementById("space-badges");
+    bBox.innerHTML = "";
+    db.ref("userBadges/" + uid).once("value", function (bsnap) {
+      var v = bsnap.val() || {};
+      var keys = Object.keys(v);
+      if (!keys.length) { bBox.innerHTML = "<p>no badges yet</p>"; return; }
+      keys.forEach(function (bid) { bBox.appendChild(badgeImg(bid, 48)); });
+    });
+    // editor only for the owner
+    var editBtn = document.getElementById("space-edit-btn");
+    var editor = document.getElementById("space-editor");
+    if (uid === me) {
+      editBtn.className = "secondary";
+      editBtn.textContent = "edit my space";
+      editBtn.onclick = function () {
+        var ed = document.getElementById("space-editor");
+        if (ed.className === "hidden") {
+          ed.className = "";
+          document.getElementById("space-bio-input").value = sdata.bio || "";
+          document.getElementById("space-ok").textContent = "";
+          renderSpaceThemePicker(sdata.theme || "default");
+          editBtn.textContent = "hide editor";
+        } else {
+          ed.className = "hidden";
+          editBtn.textContent = "edit my space";
+        }
+      };
+    } else {
+      editBtn.className = "secondary hidden";
+      editor.className = "hidden";
+    }
+  }
+  function renderSpaceThemePicker(currentTheme) {
+    spaceEditTheme = currentTheme || "default";
+    var box = document.getElementById("space-theme-picker");
+    box.innerHTML = "";
+    var me = myUid();
+    if (!me) { return; }
+    db.ref("users/" + me + "/spaceThemes").once("value", function (snap) {
+      var owned = snap.val() || [];
+      if (!Array.isArray(owned)) { owned = []; }
+      spaceThemeDefs.forEach(function (td) {
+        var canUse = td.id === "default" || owned.indexOf(td.id) !== -1;
+        (function (td, canUse) {
+          var sw = document.createElement("div");
+          sw.className = "theme-swatch " + td.cls + (spaceEditTheme === td.id ? " sel" : "");
+          sw.title = td.name + (canUse ? "" : " (buy in shop!)");
+          sw.style.opacity = canUse ? "1" : "0.4";
+          sw.onclick = function () {
+            if (!canUse) { flashNotice("buy this theme in the shop first!"); return; }
+            spaceEditTheme = td.id;
+            renderSpaceThemePicker(td.id);
+          };
+          box.appendChild(sw);
+          var lb = document.createElement("span");
+          lb.style.fontSize = "13px"; lb.style.marginRight = "8px";
+          lb.textContent = td.name + (canUse ? "" : " (shop)");
+          box.appendChild(lb);
+        })(td, canUse);
+      });
+      document.getElementById("space-theme-note").textContent = "more themes in the shop!";
+    });
+  }
+  function saveSpace() {
+    var me = myUid();
+    if (!me) { return; }
+    var bio = document.getElementById("space-bio-input").value.substring(0, 300);
+    db.ref("userSpaces/" + me).set({ bio: bio, theme: spaceEditTheme, at: Date.now() }, function (err) {
+      var ok = document.getElementById("space-ok");
+      if (err) { ok.textContent = "save failed!"; return; }
+      ok.textContent = "space saved!";
+      enterSpace(me);
+    });
+  }
+  document.getElementById("space-save-btn").onclick = saveSpace;
+  document.getElementById("space-back-btn").onclick = function () { showScreen("profile-screen"); };
+  document.getElementById("profile-space-btn").onclick = function () { enterSpace(myUid()); };
+  document.getElementById("pp-space-btn").onclick = function () { if (ppUid) { enterSpace(ppUid); } };
 
   /* ---------- chat ---------- */
   function reportCurrentDm() {
@@ -7105,8 +7293,11 @@ var storeItems = [
   { id: "theme_stripes", kind: "theme", themeKey: "stripes", name: "stripes theme", desc: "striped background for your profile", cost: 60 },
   { id: "theme_grid", kind: "theme", themeKey: "grid", name: "grid theme", desc: "grid background for your profile", cost: 60 },
   { id: "theme_checker", kind: "theme", themeKey: "checker", name: "checker theme", desc: "checkerboard background for your profile", cost: 60 },
+  { id: "spacetheme_starry", kind: "spacetheme", themeKey: "starry", name: "starry night space theme", desc: "a starry night background for your personal space", cost: 50 },
+  { id: "spacetheme_ocean", kind: "spacetheme", themeKey: "ocean", name: "ocean waves space theme", desc: "a blue ocean background for your personal space", cost: 50 },
+  { id: "spacetheme_sunset", kind: "spacetheme", themeKey: "sunset", name: "sunset space theme", desc: "an orange and pink sunset background for your personal space", cost: 50 },
   { id: "boost", kind: "boost", name: "xp boost", desc: "double xp for 24 hours", cost: 120 },
-  { id: "box", kind: "box", name: "mystery box", desc: "a random surprise — could be anything", cost: 30 }
+  { id: "box", kind: "box", name: "mystery box", desc: "random prize! 70% xp (25-60), 20% theme, 10% 12h xp boost", cost: 30 }
 ];
 var themeDefs = [
   { id: "dots", name: "dots", cls: "ptheme-dots" },
@@ -7116,6 +7307,17 @@ var themeDefs = [
 ];
 function themeDefFor(id) {
   for (var i = 0; i < themeDefs.length; i++) { if (themeDefs[i].id === id) { return themeDefs[i]; } }
+  return null;
+}
+/* personal space themes - CSS only, no graphics */
+var spaceThemeDefs = [
+  { id: "default", name: "plain white", cls: "space-default" },
+  { id: "starry", name: "starry night", cls: "space-starry" },
+  { id: "ocean", name: "ocean waves", cls: "space-ocean" },
+  { id: "sunset", name: "sunset", cls: "space-sunset" }
+];
+function spaceThemeDefFor(id) {
+  for (var i = 0; i < spaceThemeDefs.length; i++) { if (spaceThemeDefs[i].id === id) { return spaceThemeDefs[i]; } }
   return null;
 }
 var boardTab = "day";
@@ -7228,6 +7430,14 @@ function openStoreDetails(it) {
       };
       opts.appendChild(b);
     });
+  } else if (it.kind === "spacetheme") {
+    // preview: mock space with the theme background
+    var smock = document.createElement("div");
+    smock.style.cssText = "border:2px solid #111;padding:16px;max-width:280px;margin:0 auto;";
+    var sdef = spaceThemeDefFor(it.themeKey);
+    if (sdef) { smock.className = sdef.cls; }
+    smock.innerHTML = "<p><b>my space</b></p><p style='font-size:14px'>this is how your space would look!</p>";
+    prev.appendChild(smock);
   } else if (it.kind === "boost") {
     prev.innerHTML = "<p style='font-size:48px'>\u26a1</p><p>2x xp for 24 hours!</p>";
   } else if (it.kind === "box") {
@@ -7263,6 +7473,29 @@ function storeBuyItem(it) {
       myBoostUntil = until; renderStore(); refreshHome();
       flashNotice("2x xp for 24 hours!");
       document.getElementById("store-modal").className = "hidden";
+    });
+    return;
+  }
+  if (it.kind === "spacetheme") {
+    changeXp(me, -it.cost);
+    db.ref("users/" + me + "/spaceThemes").once("value", function (snap) {
+      var arr = snap.val() || [];
+      if (!Array.isArray(arr)) { arr = []; }
+      if (arr.indexOf(it.themeKey) === -1) { arr.push(it.themeKey); }
+      var up = {};
+      up["store/" + me + "/" + it.id] = true;
+      up["users/" + me + "/spaceThemes"] = arr;
+      db.ref().update(up, function (err) {
+        if (!err) {
+          if (!myStore) { myStore = {}; }
+          myStore[it.id] = true;
+          renderStore(); refreshHome();
+          flashNotice(it.name + " purchased! pick it in your space editor.");
+          document.getElementById("store-modal").className = "hidden";
+        } else {
+          flashNotice("purchase failed.");
+        }
+      });
     });
     return;
   }
@@ -7393,19 +7626,10 @@ function themePickerInto(row, current, onPick, owned) {
 function openMysteryBox() {
   var me = myUid();
   var r = Math.random();
-  if (r < 0.55) {
+  if (r < 0.70) {
     var amt = 25 + Math.floor(Math.random() * 36);
     changeXp(me, amt);
     flashNotice("mystery box: +" + amt + " xp!");
-  } else if (r < 0.75) {
-    var keys = Object.keys(petSprites);
-    var pk = keys[Math.floor(Math.random() * keys.length)];
-    if (pk === myPet) { changeXp(me, 50); flashNotice("mystery box: duplicate pet, +50 xp instead!"); }
-    else {
-      db.ref("users/" + me + "/pet").set(pk, function () {
-        myPet = pk; flashNotice("mystery box: a " + (petNames[pk] || pk) + " pet!");
-      });
-    }
   } else if (r < 0.90) {
     var tk = themeDefs[Math.floor(Math.random() * themeDefs.length)].id;
     if (tk === myTheme) { changeXp(me, 50); flashNotice("mystery box: duplicate theme, +50 xp instead!"); }
