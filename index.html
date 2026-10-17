@@ -15,6 +15,17 @@
   body.dark h1, body.dark h2 { color: #eeeeee; }
   body.dark a { color: #88bbff; }
   body.dark .sug-done-text { text-decoration: line-through; opacity: 0.6; }
+  /* colorsoft mode: soft muted colors for Kindle Colorsoft color e-ink */
+  body.colorsoft { background: #fdf8ec; color: #2e3a3a; }
+  body.colorsoft input, body.colorsoft textarea, body.colorsoft select { background: #ffffff; color: #2e3a3a; border-color: #b9c8c0; }
+  body.colorsoft button { background: #7fb5b5; color: #143333; border-color: #6aa3a3; }
+  body.colorsoft button.secondary { background: #eef4ef; color: #2e3a3a; border-color: #b9c8c0; }
+  body.colorsoft .tile { background: #f3ead7; border-color: #cdbf9f; color: #2e3a3a; }
+  body.colorsoft .req-row { background: #f7f1e2; border-color: #d8cba8; }
+  body.colorsoft .msg { border-color: #d8cba8; }
+  body.colorsoft h1, body.colorsoft h2 { color: #24565a; }
+  body.colorsoft a { color: #2f6f6f; }
+  body.colorsoft .sug-done-text { text-decoration: line-through; opacity: 0.6; }
   body {
 
     font-family: Georgia, "Times New Roman", serif;
@@ -231,8 +242,8 @@
   #poll-list .poll-card { display: inline-block; vertical-align: top; width: 46%; margin: 1%; box-sizing: border-box; }
   .rep-row { border: 3px solid #990000; padding: 10px; margin-bottom: 10px; }
   .rep-row p { margin: 0 0 6px 0; font-size: 18px; }
-  #profile-popup, #signin-popup, #help-popup { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-  #help-popup.hidden, #profile-popup.hidden, #signin-popup.hidden, #confirm-popup.hidden, #top-logout.hidden, #user-chip.hidden { display: none !important; }
+  #profile-popup, #signin-popup, #help-popup, #missed-popup { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  #help-popup.hidden, #profile-popup.hidden, #signin-popup.hidden, #missed-popup.hidden, #confirm-popup.hidden, #top-logout.hidden, #user-chip.hidden { display: none !important; }
   #help-box { background: #ffffff; border: 3px solid #111111; padding: 18px; max-width: 85%; font-size: 18px; text-align: center; }
   #help-text { margin-bottom: 14px; }
   #confirm-popup {
@@ -858,6 +869,8 @@
   <div id="set-body-appear" class="hidden section-body">
     <button id="theme-light-btn" class="secondary">light mode</button>
     <button id="theme-dark-btn" class="secondary">dark mode</button>
+    <button id="theme-soft-btn" class="secondary">colorsoft mode</button>
+    <p style="font-size:16px">colorsoft mode uses soft colors made for the kindle colorsoft screen.</p>
   </div>
   <button id="set-sec-online" class="secondary section-head">online list +</button>
   <div id="set-body-online" class="hidden section-body">
@@ -1085,6 +1098,9 @@
   <h1>changelog</h1>
   <div id="log-entries">
     <h2>oct 17, 2026</h2>
+    <p><b>what did you miss</b> — when you sign in, a screen now shows what happened while you were away: mentions, new DM requests, new DMs, and new polls!</p>
+    <p><b>colorsoft mode</b> — new appearance option in settings! soft colors made for the kindle colorsoft screen.</p>
+    <p><b>request dm button</b> — profiles now have a "request dm" button that sends a DM request in one tap!</p>
     <p><b>chat pfps fixed</b> — profile pictures show next to names in chat again for everyone (no more blanks!).</p>
     <p><b>profile decorations</b> — my space is gone for now! the free decorations moved to your profile instead — pick up to 5 in your profile, they show under your bio.</p>
     <p><b>delete polls</b> — chickn can now delete any poll (asks to confirm first), and polls show two in each row now.</p>
@@ -1347,8 +1363,19 @@
     <button id="pp-follow-btn" class="secondary">follow</button>
     <div id="pp-badges" style="margin:8px 0;"></div>
     <button id="pp-dm-btn" class="secondary">dm</button>
+    <button id="pp-reqdm-btn" class="secondary">request dm</button>
     <button id="pp-tip-btn" class="secondary">tip xp</button>
     <button id="pp-close-btn" class="secondary">close</button>
+  </div>
+</div>
+
+<!-- WHAT DID YOU MISS -->
+<div id="missed-popup" class="hidden">
+  <div id="missed-card" style="background:#ffffff;max-width:520px;width:92%;padding:16px;border:2px solid #333333;max-height:85%;overflow:auto;">
+    <h2>what did you miss</h2>
+    <p style="font-size:15px;">while you were away:</p>
+    <div id="missed-list"></div>
+    <button id="missed-close-btn" class="secondary">close</button>
   </div>
 </div>
 
@@ -1903,10 +1930,11 @@
   function applyAllSettings() {
     try {
       // theme
-      var dark = false;
-      try { dark = localStorage.getItem("readium_theme") === "dark"; } catch (e) {}
-      document.body.className = document.body.className.replace(/\bdark\b/g, "").trim();
-      if (dark) document.body.className += " dark";
+      var tmode = "light";
+      try { tmode = localStorage.getItem("readium_theme") || "light"; } catch (e) {}
+      if (tmode !== "dark" && tmode !== "colorsoft") { tmode = "light"; }
+      document.body.className = document.body.className.replace(/\b(dark|colorsoft)\b/g, "").trim();
+      if (tmode !== "light") document.body.className += " " + tmode;
       // font size
       var size = "normal";
       try { size = localStorage.getItem("readium_fontsize") || "normal"; } catch (e) {}
@@ -2389,6 +2417,110 @@
     var uid = myUid();
     if (uid) { db.ref("mentionNotifs/" + uid).remove(function () { renderMentions(null); }); }
   };
+
+  /* ---------- what did you miss ---------- */
+  var missedChecked = false;
+  function mentionLabelFor(n) {
+    if (n.kind === "follow") { return (n.from || "someone") + " posted in the neighborhood"; }
+    if (n.kind === "reply") { return (n.from || "someone") + " replied to your neighborhood post"; }
+    return (n.from || "someone") + " mentioned you in " + (n.title || "chat");
+  }
+  function showMissed(items) {
+    var box = document.getElementById("missed-list");
+    box.innerHTML = "";
+    for (var i = 0; i < items.length; i++) {
+      (function (it) {
+        var b = document.createElement("button");
+        b.className = "room-btn secondary";
+        b.style.display = "block";
+        b.style.width = "100%";
+        b.style.marginBottom = "6px";
+        b.style.textAlign = "left";
+        b.textContent = it.label;
+        b.onclick = function () {
+          document.getElementById("missed-popup").className = "hidden";
+          it.go();
+        };
+        box.appendChild(b);
+      })(items[i]);
+    }
+    document.getElementById("missed-popup").className = "";
+  }
+  document.getElementById("missed-close-btn").onclick = function () {
+    document.getElementById("missed-popup").className = "hidden";
+  };
+  function checkWhatYouMissed() {
+    var uid = myUid();
+    if (!uid || missedChecked) { return; }
+    missedChecked = true;
+    var uref = db.ref("users/" + uid);
+    uref.child("lastSeenAt").once("value", function (lsnap) {
+      var last = lsnap.val() || 0;
+      uref.update({ lastSeenAt: Date.now() });
+      if (!last) { return; } // first sign-in: nothing was "missed"
+      var items = [];
+      var done = 0;
+      function finish() {
+        done++;
+        if (done < 4) { return; }
+        items.sort(function (a, b) { return b.at - a.at; });
+        if (items.length) { showMissed(items); }
+      }
+      db.ref("mentionNotifs/" + uid).once("value", function (s) {
+        s.forEach(function (ch) {
+          var n = ch.val() || {};
+          if ((n.at || 0) > last) {
+            (function (nn) {
+              items.push({ at: nn.at || last, label: mentionLabelFor(nn), go: function () { enterMentions(); } });
+            })(n);
+          }
+        });
+        finish();
+      });
+      db.ref("dmRequests/" + uid).once("value", function (s) {
+        s.forEach(function (ch) {
+          var n = ch.val() || {};
+          if ((n.at || 0) > last) {
+            (function (nn) {
+              items.push({ at: nn.at, label: "new DM request from " + (nn.fromName || "someone"), go: function () { enterMsgs(); } });
+            })(n);
+          }
+        });
+        finish();
+      });
+      db.ref("userDms/" + uid).once("value", function (s) {
+        var convos = [];
+        s.forEach(function (ch) {
+          var c = ch.val() || {};
+          if (c.dmId) { convos.push({ dmId: c.dmId, name: c.name || "someone" }); }
+        });
+        if (!convos.length) { finish(); return; }
+        var left = convos.length;
+        convos.forEach(function (d) {
+          db.ref("dms/" + d.dmId + "/messages").orderByChild("ts").startAt(last + 1).limitToLast(5).once("value", function (ms) {
+            var count = 0, from = d.name, mat = last;
+            ms.forEach(function (mch) {
+              var m = mch.val() || {};
+              if (m.uid && m.uid !== uid) { count++; from = m.name || d.name; mat = m.ts || mat; }
+            });
+            if (count) {
+              (function (dd, cc, ff, aa) {
+                items.push({ at: aa, label: cc + " new DM" + (cc > 1 ? "s" : "") + " from " + ff, go: function () { openDm(dd.dmId, dd.name); } });
+              })(d, count, from, mat);
+            }
+            if (--left === 0) { finish(); }
+          });
+        });
+      });
+      db.ref("polls").orderByChild("createdAt").startAt(last + 1).once("value", function (s) {
+        s.forEach(function (ch) {
+          var p = ch.val() || {};
+          items.push({ at: p.createdAt || last, label: "new poll: " + String(p.question || "").substring(0, 60), go: function () { enterPolls(); } });
+        });
+        finish();
+      });
+    });
+  }
   function sendMentions(text) {
     var re = /@([a-z0-9._-]{3,20})/g;
     var m, seen = {};
@@ -2723,22 +2855,24 @@
     });
   };
 
-  function startDmWith(toUid, name) {
+  function startDmWith(toUid, name, okCb, errCb) {
+    var okF = okCb || showDmOk;
+    var errF = errCb || showDmError;
     var me = myUid();
-    if (!me) { showDmError("You need to be logged in."); return; }
-    if (me === toUid) { showDmError("That's you!"); return; }
-    showDmOk("Sending request to " + name + "...");
+    if (!me) { errF("You need to be logged in."); return; }
+    if (me === toUid) { errF("That's you!"); return; }
+    okF("Sending request to " + name + "...");
     var reqData = { fromUid: me, fromName: displayName(), at: Date.now() };
     db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
       if (err) {
         var code = err && err.code ? err.code : "";
-        if (code === "PERMISSION_DENIED") { showDmOk("Request already sent — waiting for them."); }
-        else { showDmError("Could not send request: " + (err.message || err)); }
+        if (code === "PERMISSION_DENIED") { okF("Request already sent — waiting for them."); }
+        else { errF("Could not send request: " + (err.message || err)); }
         return;
       }
       db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function (err2) {
-        if (err2) { showDmError("Request sent but tracking failed."); return; }
-        showDmOk("Request sent to " + name + "! They'll see a dot on their DMs.");
+        if (err2) { errF("Request sent but tracking failed."); return; }
+        okF("Request sent to " + name + "! They'll see a dot on their DMs.");
       });
     });
   }
@@ -4278,14 +4412,24 @@
     var me = myUid();
     var fb = document.getElementById("pp-follow-btn");
     var dmb = document.getElementById("pp-dm-btn");
+    var rdb = document.getElementById("pp-reqdm-btn");
     if (uid === me) {
       fb.className = "mini secondary hidden";
       dmb.className = "mini secondary hidden";
+      rdb.className = "mini secondary hidden";
     } else {
       fb.className = "mini secondary";
       dmb.className = "mini secondary";
+      rdb.className = "mini secondary";
+      rdb.textContent = "request dm";
       db.ref("follows/" + me + "/" + uid).once("value", function (snap) {
         fb.textContent = snap.exists() ? "unfollow" : "follow";
+      });
+      db.ref("dmRequestsOut/" + me + "/" + uid).once("value", function (snap) {
+        if (snap.exists()) { rdb.textContent = "requested"; }
+      });
+      db.ref("userDms/" + me + "/" + uid).once("value", function (snap) {
+        if (snap.exists()) { rdb.textContent = "requested"; }
       });
     }
     renderPopupBadges(uid);
@@ -4328,6 +4472,17 @@
     enterDmScreen();
     document.getElementById("dm-lookup").value = name;
     document.getElementById("dm-search-btn").onclick();
+  };
+  document.getElementById("pp-reqdm-btn").onclick = function () {
+    if (!ppUid || ppUid === myUid()) { return; }
+    var btn = this;
+    var name = document.getElementById("pp-name").textContent;
+    startDmWith(ppUid, name,
+      function (msg) {
+        flashNotice(msg);
+        btn.textContent = "requested";
+      },
+      function (msg) { flashNotice(msg); });
   };
 
   /* ---------- personal spaces ---------- */
@@ -5306,25 +5461,26 @@
   document.getElementById("hood-home-btn").onclick = goHome;
 
   function applyTheme() {
-    var dark = false;
-    try { dark = localStorage.getItem("readium_theme") === "dark"; } catch (e) {}
-    try { document.body.className = document.body.className.replace(/\bdark\b/g, "").replace(/^\s+|\s+$/g, ""); } catch (e2) {}
-    if (dark) { document.body.className = (document.body.className + " dark").replace(/^\s+|\s+$/g, ""); }
+    var mode = "light";
+    try { mode = localStorage.getItem("readium_theme") || "light"; } catch (e) {}
+    if (mode !== "dark" && mode !== "colorsoft") { mode = "light"; }
+    try { document.body.className = document.body.className.replace(/\b(dark|colorsoft)\b/g, "").replace(/^\s+|\s+$/g, ""); } catch (e2) {}
+    if (mode !== "light") { document.body.className = (document.body.className + " " + mode).replace(/^\s+|\s+$/g, ""); }
     var lb = document.getElementById("theme-light-btn");
-    var db = document.getElementById("theme-dark-btn");
-    if (lb) { lb.textContent = dark ? "light mode" : "light mode \u2713"; }
-    if (db) { db.textContent = dark ? "dark mode \u2713" : "dark mode"; }
+    var dk = document.getElementById("theme-dark-btn");
+    var sb = document.getElementById("theme-soft-btn");
+    if (lb) { lb.textContent = mode === "light" ? "light mode \u2713" : "light mode"; }
+    if (dk) { dk.textContent = mode === "dark" ? "dark mode \u2713" : "dark mode"; }
+    if (sb) { sb.textContent = mode === "colorsoft" ? "colorsoft mode \u2713" : "colorsoft mode"; }
   }
-  document.getElementById("theme-light-btn").onclick = function () {
-    try { localStorage.setItem("readium_theme", "light"); } catch (e) {}
-        backupSetting("readium_theme", "light");
+  function setThemeMode(m) {
+    try { localStorage.setItem("readium_theme", m); } catch (e) {}
+    backupSetting("readium_theme", m);
     applyTheme();
-  };
-  document.getElementById("theme-dark-btn").onclick = function () {
-    try { localStorage.setItem("readium_theme", "dark"); } catch (e) {}
-        backupSetting("readium_theme", "dark");
-    applyTheme();
-  };
+  }
+  document.getElementById("theme-light-btn").onclick = function () { setThemeMode("light"); };
+  document.getElementById("theme-dark-btn").onclick = function () { setThemeMode("dark"); };
+  document.getElementById("theme-soft-btn").onclick = function () { setThemeMode("colorsoft"); };
   applyTheme();
   function applyFontSize() {
     var size = "normal";
@@ -12442,6 +12598,7 @@ function flairName(name, rec) {
       }, 60000);
       startPresence();
       checkXpGrants();
+      checkWhatYouMissed();
       closeSignin();
       var startHash = "";
       try { startHash = String(window.location.hash || "").replace("#", ""); } catch (e3) {}
@@ -12462,6 +12619,7 @@ function flairName(name, rec) {
       dmMsgWatch = {};
       dmReqSeen = {};
       mentionSeen = {};
+      missedChecked = false;
       myXp = 0;
       isMod = false;
       isFounder = false;
