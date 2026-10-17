@@ -842,7 +842,7 @@
   <button id="poxel-save-btn">save art</button>
   <button id="poxel-pfp-btn" class="secondary">set as my pfp</button>
   <h2>my gallery</h2>
-  <div id="poxel-gallery"></div>
+  <div id="poxel-gallery" style="min-height:60px;border:1px solid #ccc;padding:8px;margin:8px 0"></div>
   <button id="poxel-back-btn" class="secondary">back</button>
 </div>
 
@@ -3385,6 +3385,10 @@
     g.push({ size: poxelSize, data: poxelData, at: Date.now() });
     savePoxelGallery(g);
     renderPoxelGallery();
+    var btn = document.getElementById("poxel-save-btn");
+    var orig = btn.textContent;
+    btn.textContent = "saved!";
+    setTimeout(function () { btn.textContent = orig; }, 1500);
   };
   document.getElementById("poxel-pfp-btn").onclick = function () {
     var pfp16 = poxelScaleTo16(poxelData, poxelSize);
@@ -8569,9 +8573,8 @@ function flairName(name, rec) {
     if (!alcSel.length) { mx.innerHTML = "<p>tap two elements, then mix!</p>"; }
   }
   function alcTap(n) {
-    var i = alcSel.indexOf(n);
-    if (i !== -1) { alcSel.splice(i, 1); }
-    else if (alcSel.length < 2) { alcSel.push(n); }
+    // allow the same element twice (e.g. water+water)
+    if (alcSel.length < 2) { alcSel.push(n); }
     else { alcSel = [n]; }
     document.getElementById("alc-msg").textContent = "";
     alcRender();
