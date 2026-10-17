@@ -5709,6 +5709,7 @@
     gamble: { title: "play your luck", desc: "Bet your XP on coin flips, dice rolls, and slots! Wins grow your XP, losses shrink it. The biggest losers board tracks who lost the most.",
       settings: [] },
     snake: { title: "snake", desc: "Classic snake! Eat food, grow long, don't hit yourself. Walls wrap around!",
+      settings: [],
       help: "eat the red food to grow! walls wrap around so only hitting yourself kills you. 1 xp per food!" },
     cookie: { title: "cookie clicker", desc: "Click the cookie! Most clicks wins a spot on the leaderboard.",
       settings: [] }
@@ -5763,6 +5764,7 @@
     else if (g === "alc") { enterAlc(); }
     else if (g === "gamble") { enterGamble(); }
     else if (g === "cookie") { enterCookie(); }
+    else if (g === "snake") { enterSnake(); }
   }
 
   function openGameMenu(g) {
