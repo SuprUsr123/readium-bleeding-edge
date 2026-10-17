@@ -950,6 +950,18 @@
 <div id="log-screen" class="hidden">
   <h1>changelog</h1>
   <div id="log-entries">
+    <h2>oct 17, 2026</h2>
+    <p><b>cookie clicker</b> — new game! tap the cookie as fast as you can! most clicks leaderboard! features your custom cookie art!</p>
+    <p><b>976 alchemy elements</b> — alchemy exploded from 60 to 976 elements! animals, food, fantasy, space, tech, and way more!</p>
+    <p><b>alchemy recipes fixed</b> — 29 recipes weren't working (like mud+fire). all fixed now!</p>
+    <p><b>alchemy redesign</b> — new mixing UI with two big boxes! tap elements to fill them, most recent at top, side menu so no scrolling!</p>
+    <p><b>poxel</b> — new pixel art studio app! draw on 8x8, 16x16, or 32x32, save to gallery, set as your pfp!</p>
+    <p><b>custom notifications</b> — tell the assistant bot "notify me when [username] talks" for custom popups! or "notify me when anyone talks"!</p>
+    <p><b>smarter bot</b> — the assistant remembers your name, knows about all new features, and has 10 jokes!</p>
+    <p><b>open polls</b> — anyone can post polls now! chickn can pin favorites to the top!</p>
+    <p><b>small text</b> — new font size option! shrink text to 80% to see more messages!</p>
+    <p><b>gamble boards side by side</b> — biggest winners and losers now display next to each other!</p>
+    <p><b>pfp fix</b> — profile pictures always show now, no more blanks!</p>
     <h2>oct 16, 2026</h2>
     <p><b>poll comments</b> — you can now comment under polls! tap "comments" on any poll.</p>
     <p><b>most wins boards</b> — every game with wins (tic tac toe, connect four, chess, solitaire, critter catch, pictionary) now shows a "most wins" leaderboard under the game!</p>
@@ -10440,6 +10452,105 @@ function flairName(name, rec) {
     if (t.indexOf("bye") !== -1 || t.indexOf("goodnight") !== -1 || t.indexOf("good night") !== -1) return "bye" + (chatbotMemory.name ? " " + chatbotMemory.name : "") + "! come back soon!";
     if (t.indexOf("thank") !== -1) return "you're welcome" + (chatbotMemory.name ? ", " + chatbotMemory.name : "") + "! happy to help!";
     if (t.indexOf("sorry") !== -1) return "no worries at all!";
+    // door reminders
+    if (t.indexOf("remind me") !== -1 && (t.indexOf("door") !== -1 || t.indexOf("event") !== -1)) {
+      try {
+        var uid = myUid();
+        if (!uid) return "you need to be signed in for reminders!";
+        db.ref("eventKnocks/" + uid).once("value", function (snap) {
+          var knocks = snap.val() || {};
+          var now = Date.now();
+          var recent = Object.keys(knocks).filter(function (k) { return now - parseInt(k) < 7200000; }).length;
+          if (recent >= 6) {
+            var oldest = Math.min.apply(null, Object.keys(knocks).map(function (k) { return parseInt(k); }));
+            var waitMs = 7200000 - (now - oldest);
+            var waitMin = Math.ceil(waitMs / 60000);
+            setTimeout(function () {
+              notify("doors ready!", "your october event doors have reset! go knock!", function () { showScreen("event-screen"); });
+            }, waitMs);
+            addChatbotMsg("bot", "you've used all 6 knocks! i'll notify you in " + waitMin + " minutes when they reset!");
+          } else {
+            addChatbotMsg("bot", "you still have " + (6 - recent) + " knocks left! no reminder needed!");
+          }
+        });
+      } catch (e) {}
+      return "checking your doors...";
+    }
+    // dice roll
+    if (t.match(/roll (a |the )?dice/) || t.match(/roll d(\d+)/)) {
+      var sides = 6;
+      var dm = t.match(/d(\d+)/);
+      if (dm) sides = Math.min(parseInt(dm[1]), 100);
+      return "you rolled a " + (1 + Math.floor(Math.random() * sides)) + " (d" + sides + ")!";
+    }
+    // coin flip
+    if (t.indexOf("flip a coin") !== -1 || t.indexOf("coin flip") !== -1) {
+      return "it's " + (Math.random() < 0.5 ? "heads" : "tails") + "!";
+    }
+    // pick between options
+    var pickM = t.match(/pick (?:between )?(.+) (?:or|and) (.+)/) || t.match(/choose (?:between )?(.+) (?:or|and) (.+)/);
+    if (t.indexOf("pick for me") !== -1 || pickM) {
+      if (pickM) {
+        var opts = [pickM[1].trim(), pickM[2].trim()];
+        return "i pick... " + opts[Math.floor(Math.random() * opts.length)] + "!";
+      }
+      return "pick between what? try 'pick between pizza or tacos'!";
+    }
+    // random game
+    if (t.indexOf("random game") !== -1 || t.indexOf("pick a game") !== -1) {
+      var games = ["tic-tac-toe", "connect four", "chess", "solitaire", "alchemy", "critter catch", "cookie clicker", "life sim", "play your luck"];
+      return "you should play... " + games[Math.floor(Math.random() * games.length)] + "!";
+    }
+    // riddles
+    if (t.indexOf("riddle") !== -1) {
+      var riddles = [
+        "i speak without a mouth and hear without ears. i have no body, but i come alive with wind. what am i? (an echo)",
+        "the more of me you take, the more you leave behind. what am i? (footsteps)",
+        "what has keys but can't open locks? (a piano)",
+        "what gets wetter the more it dries? (a towel)",
+        "i'm tall when i'm young and short when i'm old. what am i? (a candle)"
+      ];
+      return riddles[Math.floor(Math.random() * riddles.length)];
+    }
+    // what's new
+    if (t.indexOf("what's new") !== -1 || t.indexOf("whats new") !== -1) {
+      return "latest: cookie clicker game, 976 alchemy elements, poxel art studio, custom notifications via me, open polls with pinning, and a way smarter me! check the changelog for everything!";
+    }
+    // xp math
+    var xpM = t.match(/how many messages (?:until|to|for) (?:i can afford )?(.+)/);
+    if (t.indexOf("how much xp") !== -1 || xpM) {
+      var costs = { "mystery box": 30, "theme": 60, "xp boost": 120, "boost": 120 };
+      var item = xpM ? xpM[1].trim() : "";
+      for (var ck in costs) {
+        if (item.indexOf(ck) !== -1 || t.indexOf(ck) !== -1) {
+          return "the " + ck + " costs " + costs[ck] + " xp! that's " + costs[ck] + " chat messages (1 xp each), or " + Math.ceil(costs[ck]/10) + " game wins!";
+        }
+      }
+      return "mystery box is 30 xp, themes are 60 xp, xp boost is 120 xp! you get 1 xp per chat message!";
+    }
+    // who's online
+    if (t.indexOf("who's online") !== -1 || t.indexOf("whos online") !== -1) {
+      try {
+        db.ref("presence").once("value", function (snap) {
+          var p = snap.val() || {};
+          var names = [];
+          var now = Date.now();
+          for (var k in p) {
+            if (now - (p[k].at || 0) < 300000) names.push(p[k].name || "someone");
+          }
+          addChatbotMsg("bot", names.length ? "online now: " + names.slice(0, 10).join(", ") + (names.length > 10 ? " and " + (names.length-10) + " more" : "") : "nobody else is online right now!");
+        });
+      } catch (e) {}
+      return "checking who's online...";
+    }
+    // game tips
+    if (t.indexOf("tip") !== -1 || t.indexOf("strategy") !== -1 || t.indexOf("how do i win") !== -1) {
+      if (t.indexOf("chess") !== -1) return "chess tip: control the center! develop knights and bishops early, castle your king to safety, and don't move the same piece twice in the opening!";
+      if (t.indexOf("solitaire") !== -1) return "solitaire tip: always flip the stock when stuck, prioritize uncovering face-down cards, and don't empty a tableau column unless you have a king ready!";
+      if (t.indexOf("alchemy") !== -1) return "alchemy tip: start with the basics! fire+water=steam, earth+water=mud. try combining everything with everything - 976 elements to find!";
+      if (t.indexOf("cookie") !== -1) return "cookie clicker tip: just click as fast as you can! there's no trick, it's all about speed!";
+      return "which game? i have tips for chess, solitaire, alchemy, and cookie clicker!";
+    }
     // questions
     if (t.indexOf("?") !== -1) {
       if (t.indexOf("what") !== -1) return "good question! i know about games, events, xp, dms, store, polls, pfps - ask me about any of those!";
