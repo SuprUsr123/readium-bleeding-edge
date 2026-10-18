@@ -923,6 +923,7 @@
     <button id="poxel-size-32" class="mini secondary">32x32</button>
   </div>
   <div id="poxel-palette"></div>
+  <div style="margin:6px 0"><button id="poxel-fill-btn" class="mini secondary">fill: off</button></div>
   <div id="poxel-grid" style="margin:8px 0"></div>
   <button id="poxel-clear-btn" class="secondary">clear</button>
   <button id="poxel-save-btn">save art</button>
@@ -945,6 +946,7 @@
     <span id="flip-fps-label" style="font-size:14px;">6 fps</span>
   </div>
   <div id="flip-palette"></div>
+  <div style="margin:6px 0"><button id="flip-fill-btn" class="mini secondary">fill: off</button></div>
   <div id="flip-canvas-wrap" style="text-align:center;margin:8px 0;position:relative;">
     <div id="flip-grid" style="display:inline-block;"></div>
   </div>
@@ -1402,6 +1404,7 @@
     <button id="pp-reqdm-btn" class="secondary">request dm</button>
     <button id="pp-chal-btn" class="secondary">challenge</button>
     <button id="pp-tip-btn" class="secondary">tip xp</button>
+    <button id="pp-block-btn" class="secondary">block</button>
     <button id="pp-close-btn" class="secondary">close</button>
   </div>
 </div>
@@ -2786,6 +2789,7 @@
             if (ms.key === w.lastKey) { return; }
             w.lastKey = ms.key;
             if (!m.uid || m.uid === uid) { return; }
+            if (myBlocks[m.uid]) { return; }
             if (currentRefPath === "dms/" + dmId + "/messages") { return; }
             var txt = String(m.text || "");
             if (txt.length > 60) { txt = txt.substring(0, 60) + "..."; }
@@ -2843,6 +2847,7 @@
     box.innerHTML = "";
     var keys = data ? Object.keys(data) : [];
     for (var n = 0; n < keys.length; n++) {
+      if (myBlocks[keys[n]]) { dmReqSeen[keys[n]] = 1; continue; }
       if (!dmReqSeen[keys[n]]) {
         dmReqSeen[keys[n]] = 1;
         var rn = (data[keys[n]] || {}).fromName || "someone";
@@ -2852,6 +2857,7 @@
     if (!keys.length) { box.innerHTML = "<p>none</p>"; return; }
     for (var i = 0; i < keys.length; i++) {
       (function (fromUid) {
+        if (myBlocks[fromUid]) { return; }
         var r = data[fromUid] || {};
         var row = document.createElement("div");
         row.className = "req-row";
@@ -2941,9 +2947,13 @@
     var me = myUid();
     if (!me) { errF("You need to be logged in."); return; }
     if (me === toUid) { errF("That's you!"); return; }
+    if (myBlocks[toUid]) { errF("You blocked " + name + " — unblock them first."); return; }
     okF("Sending request to " + name + "...");
     var reqData = { fromUid: me, fromName: displayName(), at: Date.now() };
-    db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
+    // don't let blocked users send requests to the person who blocked them
+    db.ref("blocks/" + toUid + "/" + me).once("value", function (bsnap) {
+      if (bsnap.exists()) { errF(name + " has blocked you."); return; }
+      db.ref("dmRequests/" + toUid + "/" + me).set(reqData, function (err) {
       if (err) {
         var code = err && err.code ? err.code : "";
         if (code === "PERMISSION_DENIED") { okF("Request already sent — waiting for them."); }
@@ -2953,6 +2963,7 @@
       db.ref("dmRequestsOut/" + me + "/" + toUid).set({ toName: name, at: Date.now() }, function (err2) {
         if (err2) { errF("Request sent but tracking failed."); return; }
         okF("Request sent to " + name + "! They'll see a dot on their DMs.");
+      });
       });
     });
   }
@@ -3729,6 +3740,30 @@
   var poxelData = "";
   var poxelColor = "1";
   var poxelPainting = false;
+  var poxelTool = "brush"; // brush | fill
+  /* flood fill for poxel + flipbook: fills the connected region, returns the new data string */
+  function floodFillStr(data, size, start, newCol) {
+    var target = data.charAt(start) || "0";
+    if (target === newCol) { return data; }
+    var arr = data.split("");
+    var stack = [start];
+    while (stack.length) {
+      var i = stack.pop();
+      if (i < 0 || i >= arr.length || arr[i] !== target) { continue; }
+      arr[i] = newCol;
+      var x = i % size, y = (i / size) | 0;
+      if (x > 0) { stack.push(i - 1); }
+      if (x < size - 1) { stack.push(i + 1); }
+      if (y > 0) { stack.push(i - size); }
+      if (y < size - 1) { stack.push(i + size); }
+    }
+    return arr.join("");
+  }
+  function poxelFloodFill(i) {
+    var newCol = (poxelColor === "e") ? "0" : poxelColor;
+    poxelData = floodFillStr(poxelData, poxelSize, i, newCol);
+    buildPoxelGrid();
+  }
   function poxelBlank(size) {
     var s = "";
     for (var i = 0; i < size * size; i++) { s += "0"; }
@@ -3754,13 +3789,14 @@
         var ci = poxelData.charAt(i) || "0";
         cell.style.background = PALETTE[parseInt(ci, 10)] || PALETTE[0];
         var paint = function () {
+          if (poxelTool === "fill") { poxelFloodFill(i); return; }
           var col = (poxelColor === "e") ? "0" : poxelColor;
           poxelData = poxelData.substring(0, i) + col + poxelData.substring(i + 1);
           cell.style.background = PALETTE[parseInt(col, 10)];
         };
-        cell.onmousedown = function (e) { poxelPainting = true; paint(); if (e && e.preventDefault) { e.preventDefault(); } };
-        cell.onmouseover = function () { if (poxelPainting) { paint(); } };
-        cell.ontouchstart = function (e) { poxelPainting = true; paint(); if (e && e.preventDefault) { e.preventDefault(); } };
+        cell.onmousedown = function (e) { if (poxelTool !== "fill") { poxelPainting = true; } paint(); if (e && e.preventDefault) { e.preventDefault(); } };
+        cell.onmouseover = function () { if (poxelPainting && poxelTool !== "fill") { paint(); } };
+        cell.ontouchstart = function (e) { if (poxelTool !== "fill") { poxelPainting = true; } paint(); if (e && e.preventDefault) { e.preventDefault(); } };
         grid.appendChild(cell);
       })(i);
     }
@@ -4977,6 +5013,13 @@
   var flipPlayTimer = null;
   var flipFps = 6;
   var flipOnion = false;
+  var flipTool = "brush"; // brush | fill
+  function flipFloodFill(i) {
+    var newCol = (flipColor === "e") ? "0" : flipColor;
+    flipFrames[flipCur] = floodFillStr(flipFrames[flipCur], flipSize, i, newCol);
+    buildFlipGrid();
+    renderFlipTimeline();
+  }
   function flipBlank() {
     var s = "";
     for (var i = 0; i < flipSize * flipSize; i++) s += "0";
@@ -5018,6 +5061,7 @@
           cell.style.background = PALETTE[parseInt(ci, 10)] || PALETTE[0];
         }
         var paint = function () {
+          if (flipTool === "fill") { flipFloodFill(i); return; }
           var col = (flipColor === "e") ? "0" : flipColor;
           var d = flipFrames[flipCur];
           flipFrames[flipCur] = d.substring(0, i) + col + d.substring(i + 1);
@@ -5025,9 +5069,9 @@
           cell.style.opacity = "1";
           renderFlipTimeline();
         };
-        cell.onmousedown = function (e) { if (flipPlaying) flipStop(); flipPainting = true; paint(); if (e && e.preventDefault) e.preventDefault(); };
-        cell.onmouseover = function () { if (flipPainting) paint(); };
-        cell.ontouchstart = function (e) { if (flipPlaying) flipStop(); flipPainting = true; paint(); if (e && e.preventDefault) e.preventDefault(); };
+        cell.onmousedown = function (e) { if (flipPlaying) flipStop(); if (flipTool !== "fill") { flipPainting = true; } paint(); if (e && e.preventDefault) e.preventDefault(); };
+        cell.onmouseover = function () { if (flipPainting && flipTool !== "fill") paint(); };
+        cell.ontouchstart = function (e) { if (flipPlaying) flipStop(); if (flipTool !== "fill") { flipPainting = true; } paint(); if (e && e.preventDefault) e.preventDefault(); };
         grid.appendChild(cell);
       })(i);
     }
@@ -5310,6 +5354,11 @@
     } catch (e) { alert("error: " + e.message); }
   };
   document.getElementById("flip-back-btn").onclick = function () { if (flipPlaying) flipStop(); showScreen("apps-screen"); };
+  document.getElementById("flip-fill-btn").onclick = function () {
+    flipTool = (flipTool === "fill") ? "brush" : "fill";
+    this.textContent = "fill: " + (flipTool === "fill" ? "on" : "off");
+    flashNotice(flipTool === "fill" ? "fill bucket on — tap an area to fill it" : "brush on");
+  };
   document.addEventListener("mouseup", function () { flipPainting = false; });
   document.getElementById("poxel-size-8").onclick = function () { poxelSetSize(8); };
   document.getElementById("poxel-size-16").onclick = function () { poxelSetSize(16); };
@@ -5333,6 +5382,11 @@
     db.ref("users/" + u.uid).update({ pfp: pfp16 }, function () { refreshHome(); showScreen("apps-screen"); });
   };
   document.getElementById("poxel-back-btn").onclick = function () { showScreen("apps-screen"); };
+  document.getElementById("poxel-fill-btn").onclick = function () {
+    poxelTool = (poxelTool === "fill") ? "brush" : "fill";
+    this.textContent = "fill: " + (poxelTool === "fill" ? "on" : "off");
+    flashNotice(poxelTool === "fill" ? "fill bucket on — tap an area to fill it" : "brush on");
+  };
   document.addEventListener("mouseup", function () { poxelPainting = false; });
 
   /* profile popup */
@@ -5368,16 +5422,20 @@
     var dmb = document.getElementById("pp-dm-btn");
     var rdb = document.getElementById("pp-reqdm-btn");
     var chb = document.getElementById("pp-chal-btn");
+    var blb = document.getElementById("pp-block-btn");
     if (uid === me) {
       fb.className = "mini secondary hidden";
       dmb.className = "mini secondary hidden";
       rdb.className = "mini secondary hidden";
       chb.className = "mini secondary hidden";
+      blb.className = "mini secondary hidden";
     } else {
       fb.className = "mini secondary";
       dmb.className = "mini secondary";
       rdb.className = "mini secondary";
       chb.className = "mini secondary";
+      blb.className = "mini secondary";
+      blb.textContent = myBlocks[uid] ? "unblock" : "block";
       rdb.textContent = "request dm";
       chb.textContent = "challenge";
       db.ref("follows/" + me + "/" + uid).once("value", function (snap) {
@@ -5455,6 +5513,62 @@
       },
       function (msg) { flashNotice(msg); });
   };
+  document.getElementById("pp-block-btn").onclick = function () {
+    if (!ppUid || ppUid === myUid()) { return; }
+    var name = document.getElementById("pp-name").textContent;
+    var uid = ppUid;
+    if (myBlocks[uid]) {
+      askConfirm("Unblock " + name + "?", function () { doUnblock(uid, name); });
+    } else {
+      askConfirm("Block " + name + "? You won't see their messages in chat, and they won't be able to send you DM requests.", function () { doBlock(uid, name); });
+    }
+  };
+
+  /* ---------- blocking ---------- */
+  var myBlocks = {};
+  var blocksRef = null;
+  var blockNotifsRef = null;
+  function loadMyBlocks() {
+    var uid = myUid();
+    if (!uid) { return; }
+    if (blocksRef) { blocksRef.off(); }
+    blocksRef = db.ref("blocks/" + uid);
+    blocksRef.on("value", function (snap) {
+      myBlocks = snap.val() || {};
+    });
+  }
+  function watchBlockNotifs() {
+    var uid = myUid();
+    if (!uid) { return; }
+    if (blockNotifsRef) { blockNotifsRef.off(); }
+    blockNotifsRef = db.ref("blockNotifs/" + uid);
+    blockNotifsRef.on("child_added", function (snap) {
+      var n = snap.val() || {};
+      try { snap.ref.remove(); } catch (e) {}
+      notify("you were blocked", "you have been blocked by " + (n.from || "someone") + ".", null);
+    });
+  }
+  function doBlock(uid, name) {
+    var me = myUid();
+    if (!me || !uid || uid === me) { return; }
+    db.ref("blocks/" + me + "/" + uid).set({ name: name, at: Date.now() }, function () {
+      myBlocks[uid] = { name: name, at: Date.now() };
+      db.ref("blockNotifs/" + uid).push({ from: displayName(), fromUid: me, at: Date.now() });
+      flashNotice(name + " blocked. you won't see their messages anymore.");
+      var bb = document.getElementById("pp-block-btn");
+      if (bb && ppUid === uid) { bb.textContent = "unblock"; }
+    });
+  }
+  function doUnblock(uid, name) {
+    var me = myUid();
+    if (!me || !uid) { return; }
+    db.ref("blocks/" + me + "/" + uid).remove(function () {
+      delete myBlocks[uid];
+      flashNotice(name + " unblocked.");
+      var bb = document.getElementById("pp-block-btn");
+      if (bb && ppUid === uid) { bb.textContent = "block"; }
+    });
+  }
 
   /* ---------- personal spaces ---------- */
   var currentSpaceUid = null;
@@ -5828,6 +5942,8 @@
   }
 
   function renderMessage(pushId, m) {
+    // hidden for users I've blocked
+    if (m && m.uid && myBlocks[m.uid]) { return; }
     var box = document.getElementById("messages");
     var wrap = document.createElement("div");
     wrap.className = "msg";
@@ -14091,6 +14207,8 @@ function flairName(name, rec) {
       updatePollDot();
       checkBanMessage();
       watchMentions();
+      loadMyBlocks();
+      watchBlockNotifs();
       startNotifyWatchers();
       checkMod();
       // cloud settings backup: restore from Firebase if localStorage was wiped (Kindle)
@@ -14118,6 +14236,7 @@ function flairName(name, rec) {
           if (auth.currentUser) {
             watchDmRequests();
             watchDmMessages();
+            watchBlockNotifs();
             startNotifyWatchers();
           }
         } catch (e) {}
@@ -14139,6 +14258,9 @@ function flairName(name, rec) {
       if (xpRef) { xpRef.off(); xpRef = null; }
       if (dmReqRef) { dmReqRef.off(); dmReqRef = null; }
       if (dmConvosRef) { dmConvosRef.off(); dmConvosRef = null; }
+      if (blocksRef) { blocksRef.off(); blocksRef = null; }
+      if (blockNotifsRef) { blockNotifsRef.off(); blockNotifsRef = null; }
+      myBlocks = {};
       for (var wid in dmMsgWatch) {
         if (dmMsgWatch[wid] && dmMsgWatch[wid].ref) { dmMsgWatch[wid].ref.off(); }
       }
