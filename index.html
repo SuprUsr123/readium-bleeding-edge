@@ -363,6 +363,11 @@
   #games-screen .tile { padding: 0; overflow: hidden; min-height: 0; aspect-ratio: 3 / 2; width: 46%; margin: 1%; }
   #games-screen .tile .g-logo-img { width: 100%; height: 100%; object-fit: contain; }
   .section-head { text-align: left; }
+  /* slim quick-nav sidebar */
+  #side-nav { position: fixed; left: 0; top: 0; bottom: 0; width: 62px; background: #f4f4f4; border-right: 2px solid #111111; z-index: 60; padding: 10px 4px; overflow-y: auto; }
+  #side-nav button { display: block; width: 100%; font-size: 13px; padding: 9px 1px; margin: 0 0 7px 0; }
+  body.sb-on { padding-left: 74px; }
+  body.dark #side-nav { background: #1a1a1a; border-right-color: #555555; }
   .section-body { border: 3px solid #111111; padding: 12px; margin-bottom: 8px; }
   #online-panel {
     position: fixed;
@@ -483,6 +488,14 @@
 </head>
 <body>
 <div id="notif-wrap"></div>
+<div id="side-nav">
+  <button id="sn-home" class="mini secondary">home</button>
+  <button id="sn-chat" class="mini secondary">chat</button>
+  <button id="sn-dms" class="mini secondary">dms</button>
+  <button id="sn-games" class="mini secondary">games</button>
+  <button id="sn-apps" class="mini secondary">apps</button>
+  <button id="sn-settings" class="mini secondary">setup</button>
+</div>
 
 <!-- HOME -->
 <div id="home-screen">
@@ -509,6 +522,9 @@
 <div id="apps-screen" class="hidden">
   <h1>all apps</h1>
   <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-poxel-btn" class="secondary">poxel</button><button id="apps-flip-btn" class="secondary">flipbook</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
+  <h2 style="font-size:20px;margin-top:16px">kindle sites</h2>
+  <p style="font-size:16px">other spots made for kindle browsers:</p>
+  <p><a href="https://rekindle.ink" target="_blank" rel="noopener">rekindle</a> — kindle dashboard with apps and games</p>
 </div>
 
 <!-- DONATE -->
@@ -876,6 +892,11 @@
   <div id="set-body-online" class="hidden section-body">
     <p style="font-size:16px">Show who's online right now in a side panel. It remembers your choice on this device.</p>
     <button id="set-online-toggle" class="secondary">online list: off</button>
+  </div>
+  <button id="set-sec-sb" class="secondary section-head">sidebar +</button>
+  <div id="set-body-sb" class="hidden section-body">
+    <p style="font-size:16px">A slim bar on the left edge with quick jumps to home, chat, DMs, games, apps, and settings. It remembers your choice on this device.</p>
+    <button id="set-sidebar-toggle" class="secondary">sidebar: on</button>
   </div>
   <button id="set-sec-enter" class="secondary section-head">send on enter +</button>
   <div id="set-body-enter" class="hidden section-body">
@@ -1270,6 +1291,9 @@
     <p><b>life sim ribbons</b> — new ribbons tab shows every ribbon you've earned and the ones you haven't. also fixed money showing $NaN when continuing as your child.</p>
     <p><b>chess glow-up</b> — warmer board colors and a cleaner frame.</p>
     <p><b>notifications</b> — tapping a popup notification now takes you straight to what it's about.</p>
+    <p><b>sidebar</b> — new slim bar on the left edge with quick jumps to home, chat, DMs, games, apps, and settings. toggle it in settings.</p>
+    <p><b>kindle sites</b> — new section on the all-apps screen with links to other kindle-made spots.</p>
+    <p><b>limited-time pets</b> — ghost pet (until nov 8) and turkey leg (until nov 30) in the store for 500 xp each. when they're gone, they're gone!</p>
     <h2>oct 17, 2026</h2>
     <p><b>security fix</b> — mod and founder powers are now locked to chickn's exact account. before, anyone with "chickn" in their email or name could get mod powers, and impersonator accounts were abusing it. that's gone now.</p>
     <p><b>username screening</b> — inappropriate usernames are now blocked at signup and show as "readerXXXX" everywhere instead of the dirty name. swept all existing usernames and banned the offenders.</p>
@@ -1930,6 +1954,30 @@
     backupSetting("readium_online_list", on ? "1" : "0");
     updateOnlinePanel();
   };
+  /* ---------- quick-nav sidebar ---------- */
+  function isSidebarOn() {
+    try { return localStorage.getItem("readium_sidebar") !== "0"; } catch (e) { return true; }
+  }
+  function updateSidebar() {
+    var on = isSidebarOn();
+    var nav = document.getElementById("side-nav");
+    if (nav) { nav.style.display = on ? "" : "none"; }
+    try { document.body.classList.toggle("sb-on", on); } catch (e) {}
+    var tgl = document.getElementById("set-sidebar-toggle");
+    if (tgl) { tgl.textContent = "sidebar: " + (on ? "on" : "off"); }
+  }
+  document.getElementById("set-sidebar-toggle").onclick = function () {
+    var on = !isSidebarOn();
+    try { localStorage.setItem("readium_sidebar", on ? "1" : "0"); } catch (e) {}
+    updateSidebar();
+  };
+  document.getElementById("sn-home").onclick = function () { goHome(); };
+  document.getElementById("sn-chat").onclick = function () { enterMsgs(); };
+  document.getElementById("sn-dms").onclick = function () { enterDmScreen(); };
+  document.getElementById("sn-games").onclick = function () { enterGames(); };
+  document.getElementById("sn-apps").onclick = function () { showScreen("apps-screen"); };
+  document.getElementById("sn-settings").onclick = function () { enterSettings(); };
+  updateSidebar();
 
   /* ---------- helpers ---------- */
   function escapeHtml(s) {
@@ -2402,6 +2450,7 @@
   document.getElementById("set-sec-text").onclick = function () { setSectionToggle("text", "text size"); };
   document.getElementById("set-sec-appear").onclick = function () { setSectionToggle("appear", "appearance"); };
   document.getElementById("set-sec-online").onclick = function () { setSectionToggle("online", "online list"); };
+  document.getElementById("set-sec-sb").onclick = function () { setSectionToggle("sb", "sidebar"); };
   document.getElementById("set-sec-pins").onclick = function () { setSectionToggle("pins", "pin apps"); renderPinList(); };
   document.getElementById("set-sec-enter").onclick = function () { setSectionToggle("enter", "send on enter"); };
   document.getElementById("set-sec-acct").onclick = function () { setSectionToggle("acct", "account"); };
@@ -9790,6 +9839,62 @@ var petSprites = {
   "dragon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAuElEQVR4nO1Uyw4CIQycGv//l+tBwTJMC0RjjHGSPWwp89iyAL8GfzfPtVi0V4gbLvRuAODurXk3kd+39fZuTiVAEIGZVYk89ipwggfnxGV4JoqP0cbJiBLgDd2pgFPfzFHwD6TqMyRJB5QJMuKT9UygD6+5ZLexHkSWxzR1yE6zOiM9pkymBrkiBzaG3MizIZP4+ZAFSVmf9q8EUPytlfNdgZPbVXJtJxD9WX3AcgafQnkX/fHduAGiPVoP3+FN4AAAAABJRU5ErkJggg==",
 };
 var petNames = { cat: "cat", dog: "dog", frog: "frog", penguin: "penguin", dragon: "dragon" };
+/* hand-drawn 16x16 pixel maps -> data urls (same canvas approach as pfps) */
+function pixelSprite(rows, palette) {
+  var cv = document.createElement("canvas");
+  cv.width = 16; cv.height = 16;
+  var cx = cv.getContext("2d");
+  for (var y = 0; y < 16; y++) {
+    var row = rows[y] || "";
+    for (var x = 0; x < 16; x++) {
+      var ch = row.charAt(x);
+      if (!ch || ch === ".") { continue; }
+      cx.fillStyle = palette[ch] || "#000000";
+      cx.fillRect(x, y, 1, 1);
+    }
+  }
+  return cv.toDataURL("image/png");
+}
+var GHOST_ROWS = [
+  ".....gggggg.....",
+  "...gggggggggg...",
+  "..gggggggggggg..",
+  "..gggggggggggg..",
+  "..ggkkggggkk gg..".replace(/ /g, ""),
+  "..ggkkggggkk gg..".replace(/ /g, ""),
+  "..gggggggggggg..",
+  "..gggggKKggggg..",
+  "..gggggggggggg..",
+  "..gggggggggggg..",
+  "..gggggggggggg..",
+  "..gggggggggggg..",
+  "..gggggggggggg..",
+  "..ggg..gg..ggg..",
+  "................",
+  "................"
+];
+var TURKEY_ROWS = [
+  "......bbbbb.....",
+  "....bbbbbbbbb...",
+  "...bbbbbbbbbbb..",
+  "...bbbbbbbbbbb..",
+  "...bbbbbbbbbbb..",
+  "....bbbbbbbbb...",
+  ".....bbbbbb.....",
+  "......bbbb......",
+  "......wwww......",
+  "......wwww......",
+  ".....wwwwww.....",
+  ".....wwwwww.....",
+  "....ww.ww.ww....",
+  "................",
+  "................",
+  "................"
+];
+petSprites["ghost"] = pixelSprite(GHOST_ROWS, { g: "#e2e2e2", k: "#111111", K: "#111111" });
+petSprites["turkeyleg"] = pixelSprite(TURKEY_ROWS, { b: "#a0622d", w: "#f5f5f5" });
+petNames["ghost"] = "ghost";
+petNames["turkeyleg"] = "turkey leg";
 /* ---------- XP + store ---------- */
 var gameXpGiven = false;
 var myXp = 0;
@@ -9924,7 +10029,9 @@ var storeItems = [
   { id: "spacetheme_ocean", kind: "spacetheme", themeKey: "ocean", name: "ocean waves space theme", desc: "a blue ocean background for your personal space", cost: 50 },
   { id: "spacetheme_sunset", kind: "spacetheme", themeKey: "sunset", name: "sunset space theme", desc: "an orange and pink sunset background for your personal space", cost: 50 },
   { id: "boost", kind: "boost", name: "xp boost", desc: "double xp for 24 hours", cost: 120 },
-  { id: "box", kind: "box", name: "mystery box", desc: "random prize! 70% xp (25-60), 20% theme, 10% 12h xp boost", cost: 30 }
+  { id: "box", kind: "box", name: "mystery box", desc: "random prize! 70% xp (25-60), 20% theme, 10% 12h xp boost", cost: 30 },
+  { id: "pet_ghost", kind: "pet", petKey: "ghost", name: "ghost pet", desc: "spooky limited halloween pet! shows by your name in chat.", cost: 500, until: Date.UTC(2026, 10, 8) },
+  { id: "pet_turkeyleg", kind: "pet", petKey: "turkeyleg", name: "turkey leg", desc: "tasty limited thanksgiving pet! shows by your name in chat.", cost: 500, until: Date.UTC(2026, 10, 30) }
 ];
 var themeDefs = [
   { id: "dots", name: "dots", cls: "ptheme-dots" },
@@ -10019,6 +10126,14 @@ function enterStore() {
 function storeOwned(itemId) {
   return !!(myStore && myStore[itemId]);
 }
+var STORE_MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+function untilLabel(ts) {
+  var d = new Date(ts);
+  return STORE_MONTHS[d.getMonth()] + " " + d.getDate();
+}
+function itemExpired(it) {
+  return !!(it.until && Date.now() > it.until && !storeOwned(it.id));
+}
 function openStoreDetails(it) {
   var me = myUid();
   document.getElementById("store-d-name").textContent = it.name;
@@ -10074,8 +10189,11 @@ function openStoreDetails(it) {
   if (storeOwned(it.id)) {
     buyBtn.textContent = "owned!";
     buyBtn.disabled = true;
+  } else if (itemExpired(it)) {
+    buyBtn.textContent = "gone!";
+    buyBtn.disabled = true;
   } else {
-    buyBtn.textContent = "buy (" + it.cost + " xp)";
+    buyBtn.textContent = "buy (" + it.cost + " xp)" + (it.until ? " — until " + untilLabel(it.until) : "");
     buyBtn.disabled = false;
     buyBtn.onclick = function () { storeBuyItem(it); };
   }
@@ -10086,6 +10204,7 @@ document.getElementById("store-d-close").onclick = function () {
 };
 function storeBuyItem(it) {
   var me = myUid();
+  if (itemExpired(it)) { flashNotice("that one's gone!"); return; }
   if (myXp < it.cost) { flashNotice("not enough xp!"); return; }
   if (it.kind === "box") {
     changeXp(me, -it.cost);
@@ -10193,13 +10312,16 @@ function renderStore() {
       row.style.cursor = "pointer";
       var t = document.createElement("p");
       var b = document.createElement("b");
-      b.textContent = it.name + " — " + it.cost + " xp" + (storeOwned(it.id) ? " (owned)" : "");
+      var tag = "";
+      if (it.until && !storeOwned(it.id)) { tag = itemExpired(it) ? " (gone!)" : " (until " + untilLabel(it.until) + ")"; }
+      b.textContent = it.name + " — " + it.cost + " xp" + (storeOwned(it.id) ? " (owned)" : "") + tag;
       t.appendChild(b);
       row.appendChild(t);
       var d = document.createElement("p");
       d.style.fontSize = "15px";
       d.textContent = it.desc;
       row.appendChild(d);
+      if (itemExpired(it)) { row.style.opacity = "0.5"; }
       row.onclick = function () { openStoreDetails(it); };
       box.appendChild(row);
     })(storeItems[j]);
