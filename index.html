@@ -997,7 +997,7 @@
 
 <!-- CHAT -->
 <div id="chat-screen" class="hidden">
-  <h1 id="chat-title">room</h1>
+  <h1 id="chat-title">room <span class="dm-dot dot hidden" title="unread dms"></span></h1>
   <button id="dm-report-btn" class="mini secondary hidden" style="margin-bottom:8px">report this DM</button>
   <button id="star-room-btn" class="mini secondary hidden" style="margin-bottom:8px">star this room</button>
   <div id="pins-box"></div>
@@ -1288,6 +1288,9 @@
   <div style="margin-bottom:10px;"><button id="log-back-btn-top" class="secondary">back</button></div>
   <div id="log-entries">
     <h2>oct 18, 2026</h2>
+    <p><b>pets gone for now</b> — the ghost and turkey leg pets are out of the store, and pet tags no longer show by anyone's name.</p>
+    <p><b>pictionary rebuilt for kindle</b> — the drawing board is now a tap-and-drag pixel grid (like flipbook) instead of a canvas, so drawing actually works on the kindle browser.</p>
+    <p><b>unread dm dot in chat</b> — the red dot for unread dms now shows right on the chat screen too, not just inside the messages app. also fixed: the very first message in a new dm now pops up a notification like the rest.</p>
     <p><b>new games fixed</b> — the new games (2048, mind reader, quiz zone, character creator, cube dash, recipe rush, slide puzzle, find the impostor, one night at readium's) were opening to a blank screen. they work now.</p>
     <p><b>sidebar moved</b> — the nav bar is off by default now (turn it on in settings), sits at the bottom of the screen instead of the side, and collapses with the ▲ nav button so it takes up less space.</p>
     <p><b>9 new games</b> — impostor (find the impostor among the crew), mind reader (think of something, answer yes/no), 2048, quiz zone (personality quizzes), character creator (design a 16x16 character), cube dash, recipe rush (cooking game), slide puzzle, and five nights (survive the nights). all in the games tab!</p>
@@ -1559,7 +1562,7 @@
     <p>pick a word to draw:</p>
     <div id="pic-word-choices"></div>
   </div>
-  <canvas id="pic-canvas" width="320" height="240" style="border:2px solid #111111;background:#ffffff;touch-action:none"></canvas>
+  <div id="pic-grid" style="margin:8px auto;"></div>
   <div id="pic-draw-row" class="hidden">
     <button id="pic-clear-btn" class="mini secondary">clear</button>
   </div>
@@ -1685,6 +1688,7 @@
   var confirmCb = null;
   var confirmNotes = false;
   var dmHas = false;
+  var dmMsgHas = false;
   var mentionHas = false;
   var presenceRef = null;
   var onlineListRef = null;
@@ -2303,13 +2307,8 @@
     }
   }
   function petTagFor(pet) {
-    if (!pet || !petSprites[pet]) { return null; }
-    var im = document.createElement("img");
-    im.className = "pet-tag";
-    im.src = petSprites[pet];
-    im.alt = petNames[pet] || pet;
-    im.title = petNames[pet] || pet;
-    return im;
+    // pets disabled for now (removed from store 2026-10-18) - keep code for later re-enable
+    return null;
   }
   function petTagForName(name) {
     var r = usersByName[String(name || "").toLowerCase()];
@@ -2647,7 +2646,7 @@
 
   /* ---------- mentions ---------- */
   function updateMsgsDot() {
-    var on = dmHas || mentionHas;
+    var on = dmHas || dmMsgHas || mentionHas;
     var dots = document.getElementsByClassName("dm-dot");
     for (var i = 0; i < dots.length; i++) {
       dots[i].className = on ? "dm-dot dot" : "dm-dot dot hidden";
@@ -3029,9 +3028,13 @@
             var m = ms.val() || {};
             // skip if still initializing (once hasn't returned yet)
             if (w.lastKey === "init") { return; }
-            if (w.lastKey === null) { w.lastKey = ms.key; return; }
-            if (ms.key === w.lastKey) { return; }
-            w.lastKey = ms.key;
+            if (w.lastKey === null) {
+              // baseline was empty: this is the first message ever, treat it as new
+              w.lastKey = ms.key;
+            } else {
+              if (ms.key === w.lastKey) { return; }
+              w.lastKey = ms.key;
+            }
             if (!m.uid || m.uid === uid) { return; }
             if (myBlocks[m.uid]) { return; }
             if (currentRefPath === "dms/" + dmId + "/messages") { return; }
@@ -3039,7 +3042,9 @@
             if (txt.length > 60) { txt = txt.substring(0, 60) + "..."; }
             notify("new DM from " + (m.name || w.name), txt, function () { openDm(dmId, w.name); });
             dmUnread[dmId] = true;
+            dmMsgHas = true;
             refreshDmDots();
+            updateMsgsDot();
           });
         })(others[i]);
       }
@@ -3231,7 +3236,14 @@
   function openDm(dmId, otherName) {
     if (dmReqListRef) { dmReqListRef.off(); dmReqListRef = null; }
     if (dmConvoRef) { dmConvoRef.off(); dmConvoRef = null; }
-    if (dmId && dmUnread[dmId]) { delete dmUnread[dmId]; refreshDmDots(); }
+    if (dmId && dmUnread[dmId]) {
+      delete dmUnread[dmId];
+      refreshDmDots();
+      var anyU = false;
+      for (var k in dmUnread) { if (dmUnread.hasOwnProperty(k)) { anyU = true; break; } }
+      dmMsgHas = anyU;
+      updateMsgsDot();
+    }
     openChat("dms/" + dmId + "/messages", "dm: " + otherName, "dm");
   }
 
@@ -8995,7 +9007,7 @@
   document.getElementById("pic-guess-btn").onclick = picGuess;
   document.getElementById("pic-guess-input").onkeydown = function (e) { if (e.keyCode === 13) { picGuess(); } };
   document.getElementById("pic-clear-btn").onclick = function () {
-    if (lobbyRef && picCanDraw()) { lobbyRef.child("state/strokes").remove(); }
+    if (lobbyRef && picCanDraw()) { picResetCells(); lobbyRef.child("state/cells").set(""); }
   };
   document.getElementById("pic-leave-btn").onclick = function () { picCleanup(); enterGames(); };
   document.getElementById("pic-home-btn").onclick = function () { picCleanup(); goHome(); };
@@ -9519,9 +9531,6 @@ function chessLeave(silent) {
 
 /* ---------- pictionary ---------- */
 var picWords = ("apple banana cat dog house car tree sun moon star fish bird boat plane train bike pizza cake rainbow mountain river beach snowman robot dragon castle pirate guitar piano drum soccer phone computer book chair table door window key hat shoe shirt ball kite balloon cloud rain snow flower leaf spider ant bee frog turtle shark whale crab elephant lion tiger bear monkey zebra owl snake mushroom cactus volcano island forest desert ghost witch zombie alien knight princess king queen clown doctor teacher farmer chef camera watch lamp mirror bridge tower tent flag crown sword shield anchor wheel rocket submarine taxi bus truck helmet boots coat glasses umbrella wallet coin dice cards chess checkers dominoes puzzle kite surfboard skateboard").split(" ");
-var picStrokes = [];
-var picDrawing = false;
-var picPts = [];
 var picTimerInt = null;
 var picRoundAdvancing = false;
 function picRole(L) {
@@ -9543,7 +9552,7 @@ function hostPicGame() {
     status: "waiting",
     host: { uid: u.uid, name: displayName() },
     guest: null,
-    state: { phase: "lobby", round: 0, drawer: "h", word: "", choices: [], strokes: null, scores: { h: 0, g: 0 }, endsAt: 0 },
+    state: { phase: "lobby", round: 0, drawer: "h", word: "", choices: [], cells: "", scores: { h: 0, g: 0 }, endsAt: 0 },
     turnUid: u.uid,
     winner: null,
     winnerName: null,
@@ -9561,81 +9570,104 @@ function enterPicNet() {
   lobbyRef = db.ref("gameLobbies/" + lobbyId);
   lobbyRef.on("value", function (snap) { renderPicNet(snap.val()); });
   showScreen("pic-screen");
-  picSetupCanvas();
+  picSetupGrid();
 }
-function picSetupCanvas() {
-  var cv = document.getElementById("pic-canvas");
-  function pos(e) {
-    var r = cv.getBoundingClientRect();
-    var x, y;
-    if (e.touches && e.touches.length) { x = e.touches[0].clientX; y = e.touches[0].clientY; }
-    else { x = e.clientX; y = e.clientY; }
-    return [Math.round((x - r.left) * (320 / r.width)), Math.round((y - r.top) * (240 / r.height))];
+/* pictionary drawing board: cell grid (same Kindle-safe pattern as flipbook).
+   canvas pointer drawing was unreliable on the kindle browser, so the board is
+   now 32x24 tappable cells. painted cells sync over state/cells as a 0/1 string. */
+var picCols = 32, picRows = 24, picCellPx = 12;
+var picCells = "";
+var picPainting = false;
+var picDocBound = false;
+function picBlankCells() {
+  var n = picCols * picRows, s = "";
+  for (var i = 0; i < n; i++) { s += "0"; }
+  return s;
+}
+function picPaintCell(i) {
+  if (!picCanDraw()) { return; }
+  if (picCells.charAt(i) === "1") { return; }
+  picCells = picCells.substring(0, i) + "1" + picCells.substring(i + 1);
+  var grid = document.getElementById("pic-grid");
+  if (grid && grid.children[i]) { grid.children[i].style.background = "#111111"; }
+}
+function picPushCells() {
+  if (!lobbyRef || !picCanDraw()) { return; }
+  lobbyRef.child("state/cells").set(picCells);
+}
+function picSetupGrid() {
+  var grid = document.getElementById("pic-grid");
+  if (!grid) { return; }
+  grid.innerHTML = "";
+  picCells = picBlankCells();
+  var n = picCols * picRows;
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = "repeat(" + picCols + ", " + picCellPx + "px)";
+  grid.style.width = (picCols * picCellPx) + "px";
+  grid.style.border = "2px solid #111111";
+  grid.style.background = "#ffffff";
+  grid.style.touchAction = "none";
+  grid.style.userSelect = "none";
+  try { grid.style.webkitUserSelect = "none"; } catch (e) {}
+  for (var i = 0; i < n; i++) {
+    (function (i) {
+      var cell = document.createElement("div");
+      cell.style.width = picCellPx + "px";
+      cell.style.height = picCellPx + "px";
+      cell.style.boxSizing = "border-box";
+      cell.style.border = "1px solid #eeeeee";
+      cell.style.background = "#ffffff";
+      cell.setAttribute("data-pic", i);
+      cell.onmousedown = function (e) { picPainting = true; picPaintCell(i); if (e && e.preventDefault) e.preventDefault(); };
+      cell.ontouchstart = function (e) { picPainting = true; picPaintCell(i); if (e && e.preventDefault) e.preventDefault(); };
+      grid.appendChild(cell);
+    })(i);
   }
-  function start(e) {
-    if (!picCanDraw()) { return; }
-    picDrawing = true;
-    picPts = [pos(e)];
-    if (e.cancelable) { try { e.preventDefault(); } catch (e2) {} }
-  }
-  function move(e) {
-    if (!picDrawing || !picCanDraw()) { return; }
-    picPts.push(pos(e));
-    picDrawLocal();
-    if (e.cancelable) { try { e.preventDefault(); } catch (e2) {} }
-  }
-  function end() {
-    if (!picDrawing) { return; }
-    picDrawing = false;
-    if (picPts.length > 1 && lobbyRef) {
-      var flat = [];
-      for (var i = 0; i < picPts.length; i++) { flat.push(picPts[i][0] + "," + picPts[i][1]); }
-      lobbyRef.child("state/strokes").push({ pts: flat.join(" ") });
+  grid.ontouchmove = function (e) {
+    if (e && e.preventDefault) { try { e.preventDefault(); } catch (e2) {} }
+    if (!picPainting || !picCanDraw()) { return; }
+    var t = (e.touches && e.touches[0]) || null;
+    if (!t || !document.elementFromPoint) { return; }
+    var el = document.elementFromPoint(t.clientX, t.clientY);
+    var idx = (el && el.getAttribute) ? el.getAttribute("data-pic") : null;
+    if (idx !== null && idx !== "" && idx !== undefined) {
+      picPaintCell(parseInt(idx, 10));
     }
-    picPts = [];
+  };
+  grid.ontouchend = function () { if (picPainting) { picPainting = false; picPushCells(); } };
+  if (!picDocBound) {
+    picDocBound = true;
+    document.addEventListener("mouseup", function () { if (picPainting) { picPainting = false; picPushCells(); } });
+    document.addEventListener("touchend", function () { if (picPainting) { picPainting = false; picPushCells(); } });
+    document.addEventListener("touchcancel", function () { if (picPainting) { picPainting = false; picPushCells(); } });
+    document.addEventListener("touchmove", function (e) {
+      if (!picPainting) { return; }
+      var g = document.getElementById("pic-grid");
+      if (!g || !picCanDraw()) { return; }
+      var t = (e.touches && e.touches[0]) || null;
+      if (!t || !document.elementFromPoint) { return; }
+      var el = document.elementFromPoint(t.clientX, t.clientY);
+      var p = el;
+      while (p && p !== g && p !== document.body) { p = p.parentNode; }
+      if (p === g && e.preventDefault) { try { e.preventDefault(); } catch (e2) {} }
+    });
   }
-  cv.onmousedown = start;
-  cv.onmousemove = move;
-  cv.onmouseup = end;
-  cv.ontouchstart = start;
-  cv.ontouchmove = move;
-  cv.ontouchend = end;
 }
 function picCanDraw() {
   return picCur && picCur.phase === "draw" && picCur.drawer === picRole(picCurLobby);
 }
 var picCur = null;
 var picCurLobby = null;
-function picDrawLocal() {
-  var cv = document.getElementById("pic-canvas");
-  var ctx = cv.getContext("2d");
-  if (picPts.length > 1) {
-    var a = picPts[picPts.length - 2], b = picPts[picPts.length - 1];
-    ctx.strokeStyle = "#111111";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(a[0], a[1]);
-    ctx.lineTo(b[0], b[1]);
-    ctx.stroke();
-  }
+function picResetCells() {
+  picCells = picBlankCells();
+  picRenderCells("");
 }
-function picRenderStrokes(strokes) {
-  var cv = document.getElementById("pic-canvas");
-  var ctx = cv.getContext("2d");
-  ctx.clearRect(0, 0, 320, 240);
-  if (!strokes) { return; }
-  var ks = Object.keys(strokes);
-  ctx.strokeStyle = "#111111";
-  ctx.lineWidth = 3;
-  for (var i = 0; i < ks.length; i++) {
-    var s = (strokes[ks[i]].pts || "").split(" ");
-    ctx.beginPath();
-    for (var j = 0; j < s.length; j++) {
-      var xy = s[j].split(",");
-      var x = parseInt(xy[0], 10), y = parseInt(xy[1], 10);
-      if (j === 0) { ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
-    }
-    ctx.stroke();
+function picRenderCells(cellStr) {
+  var grid = document.getElementById("pic-grid");
+  if (!grid || !grid.children || !grid.children.length) { return; }
+  var n = picCols * picRows;
+  for (var i = 0; i < n && i < grid.children.length; i++) {
+    grid.children[i].style.background = (cellStr && cellStr.charAt(i) === "1") ? "#111111" : "#ffffff";
   }
 }
 function picPickWords() {
@@ -9659,7 +9691,7 @@ function picStartRound() {
     if (drawerUid !== me && !isHost) { return; }
     var choices = (drawerUid === me) ? picPickWords() : [];
     lobbyRef.update({
-      state: { phase: "pick", round: round, drawer: drawer, word: "", choices: choices, strokes: null, scores: (L.state && L.state.scores) || { h: 0, g: 0 }, endsAt: 0 },
+      state: { phase: "pick", round: round, drawer: drawer, word: "", choices: choices, cells: "", scores: (L.state && L.state.scores) || { h: 0, g: 0 }, endsAt: 0 },
       updatedAt: Date.now()
     });
   });
@@ -9676,7 +9708,7 @@ function picChooseWord(w) {
     st.phase = "draw";
     st.word = w;
     st.choices = [];
-    st.strokes = null;
+    st.cells = "";
     st.endsAt = Date.now() + 60000;
     lobbyRef.update({ state: st, updatedAt: Date.now() });
   });
@@ -9752,7 +9784,7 @@ function renderPicNet(L) {
   scores.textContent = "scores: " + picName(L, "h") + " " + (sc.h || 0) + " - " + (sc.g || 0) + " " + picName(L, "g");
   if (L.status === "waiting") {
     status.textContent = "waiting for someone to join...";
-    picRenderStrokes(null);
+    picResetCells();
     return;
   }
   if (L.status === "playing" && (!st.phase || st.phase === "lobby")) {
@@ -9763,7 +9795,7 @@ function renderPicNet(L) {
   if (L.status === "done") {
     status.textContent = (L.winner === me) ? "you win! +10 xp" : ((L.winnerName || "someone") + " wins!");
     if (L.winner === me) { xpWinOnce("pic"); }
-    picRenderStrokes(st.strokes);
+    picRenderCells(st.cells || "");
     return;
   }
   var drawerName = picName(L, st.drawer);
@@ -9791,9 +9823,9 @@ function renderPicNet(L) {
     } else {
       status.textContent = drawerName + " is picking a word...";
     }
-    picRenderStrokes(null);
+    picResetCells();
   } else if (st.phase === "draw") {
-    picRenderStrokes(st.strokes);
+    picRenderCells(st.cells || "");
     if (iDraw) {
       status.textContent = "draw: " + st.word;
       drawRow.className = "";
@@ -9826,7 +9858,7 @@ function renderPicNet(L) {
       }, 1000);
     }
   } else if (st.phase === "roundover") {
-    picRenderStrokes(st.strokes);
+    picRenderCells(st.cells || "");
     status.textContent = "the word was: " + st.word + (st.endedBy === "timeout" ? " (time up!)" : " (guessed!)");
     picAdvance();
   }
@@ -10048,9 +10080,7 @@ var storeItems = [
   { id: "spacetheme_ocean", kind: "spacetheme", themeKey: "ocean", name: "ocean waves space theme", desc: "a blue ocean background for your personal space", cost: 50 },
   { id: "spacetheme_sunset", kind: "spacetheme", themeKey: "sunset", name: "sunset space theme", desc: "an orange and pink sunset background for your personal space", cost: 50 },
   { id: "boost", kind: "boost", name: "xp boost", desc: "double xp for 24 hours", cost: 120 },
-  { id: "box", kind: "box", name: "mystery box", desc: "random prize! 70% xp (25-60), 20% theme, 10% 12h xp boost", cost: 30 },
-  { id: "pet_ghost", kind: "pet", petKey: "ghost", name: "ghost pet", desc: "spooky limited halloween pet! shows by your name in chat.", cost: 500, until: Date.UTC(2026, 10, 8) },
-  { id: "pet_turkeyleg", kind: "pet", petKey: "turkeyleg", name: "turkey leg", desc: "tasty limited thanksgiving pet! shows by your name in chat.", cost: 500, until: Date.UTC(2026, 10, 30) }
+  { id: "box", kind: "box", name: "mystery box", desc: "random prize! 70% xp (25-60), 20% theme, 10% 12h xp boost", cost: 30 }
 ];
 var themeDefs = [
   { id: "dots", name: "dots", cls: "ptheme-dots" },
@@ -10202,7 +10232,7 @@ function openStoreDetails(it) {
   } else if (it.kind === "boost") {
     prev.innerHTML = "<p style='font-size:48px'>\u26a1</p><p>2x xp for 24 hours!</p>";
   } else if (it.kind === "box") {
-    prev.innerHTML = "<p style='font-size:48px'>?</p><p>could be xp, a pet, a theme, or a boost!</p>";
+    prev.innerHTML = "<p style='font-size:48px'>?</p><p>could be xp, a theme, or a boost!</p>";
   }
   var buyBtn = document.getElementById("store-d-buy");
   if (storeOwned(it.id)) {
