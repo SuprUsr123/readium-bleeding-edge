@@ -363,11 +363,13 @@
   #games-screen .tile { padding: 0; overflow: hidden; min-height: 0; aspect-ratio: 3 / 2; width: 46%; margin: 1%; }
   #games-screen .tile .g-logo-img { width: 100%; height: 100%; object-fit: contain; }
   .section-head { text-align: left; }
-  /* slim quick-nav sidebar */
-  #side-nav { position: fixed; left: 0; top: 0; bottom: 0; width: 62px; background: #f4f4f4; border-right: 2px solid #111111; z-index: 60; padding: 10px 4px; overflow-y: auto; }
-  #side-nav button { display: block; width: 100%; font-size: 13px; padding: 9px 1px; margin: 0 0 7px 0; }
-  body.sb-on { padding-left: 74px; }
-  body.dark #side-nav { background: #1a1a1a; border-right-color: #555555; }
+  /* slim quick-nav bar (bottom, collapsible) */
+  #side-nav { position: fixed; left: 0; right: 0; bottom: 0; background: #f4f4f4; border-top: 2px solid #111111; z-index: 60; padding: 6px; white-space: nowrap; overflow-x: auto; }
+  #side-nav button { display: inline-block; font-size: 14px; padding: 8px 10px; margin: 0 4px 0 0; vertical-align: middle; }
+  #side-nav.sb-collapsed button { display: none; }
+  #side-nav.sb-collapsed button#sn-toggle { display: inline-block; }
+  body.sb-on { padding-bottom: 62px; }
+  body.dark #side-nav { background: #1a1a1a; border-top-color: #555555; }
   .section-body { border: 3px solid #111111; padding: 12px; margin-bottom: 8px; }
   #online-panel {
     position: fixed;
@@ -489,6 +491,7 @@
 <body>
 <div id="notif-wrap"></div>
 <div id="side-nav">
+  <button id="sn-toggle" class="mini secondary">▲ nav</button>
   <button id="sn-home" class="mini secondary">home</button>
   <button id="sn-chat" class="mini secondary">chat</button>
   <button id="sn-dms" class="mini secondary">dms</button>
@@ -895,8 +898,8 @@
   </div>
   <button id="set-sec-sb" class="secondary section-head">sidebar +</button>
   <div id="set-body-sb" class="hidden section-body">
-    <p style="font-size:16px">A slim bar on the left edge with quick jumps to home, chat, DMs, games, apps, and settings. It remembers your choice on this device.</p>
-    <button id="set-sidebar-toggle" class="secondary">sidebar: on</button>
+    <p style="font-size:16px">A slim bar at the bottom of the screen with quick jumps to home, chat, DMs, games, apps, and settings. It's off by default — turn it on here. Tap the ▲ nav button on the bar to collapse it. It remembers your choice on this device.</p>
+    <button id="set-sidebar-toggle" class="secondary">sidebar: off</button>
   </div>
   <button id="set-sec-enter" class="secondary section-head">send on enter +</button>
   <div id="set-body-enter" class="hidden section-body">
@@ -1285,13 +1288,15 @@
   <div style="margin-bottom:10px;"><button id="log-back-btn-top" class="secondary">back</button></div>
   <div id="log-entries">
     <h2>oct 18, 2026</h2>
+    <p><b>new games fixed</b> — the new games (2048, mind reader, quiz zone, character creator, cube dash, recipe rush, slide puzzle, find the impostor, one night at readium's) were opening to a blank screen. they work now.</p>
+    <p><b>sidebar moved</b> — the nav bar is off by default now (turn it on in settings), sits at the bottom of the screen instead of the side, and collapses with the ▲ nav button so it takes up less space.</p>
     <p><b>9 new games</b> — impostor (find the impostor among the crew), mind reader (think of something, answer yes/no), 2048, quiz zone (personality quizzes), character creator (design a 16x16 character), cube dash, recipe rush (cooking game), slide puzzle, and five nights (survive the nights). all in the games tab!</p>
     <p><b>solitaire upgrades</b> — winning now shows a big "you win! +10 xp", the game auto-completes when everything's face-up (counts as a win even if you didn't sort every card yourself), and starting a new game mid-game asks for confirmation first.</p>
     <p><b>per-account game saves</b> — your cookie clicker, critter, life sim, alchemy, starfall and other saves are now tied to your account, so logging out and making a new account won't show someone else's progress. old saves carry over automatically.</p>
     <p><b>life sim ribbons</b> — new ribbons tab shows every ribbon you've earned and the ones you haven't. also fixed money showing $NaN when continuing as your child.</p>
     <p><b>chess glow-up</b> — warmer board colors and a cleaner frame.</p>
     <p><b>notifications</b> — tapping a popup notification now takes you straight to what it's about.</p>
-    <p><b>sidebar</b> — new slim bar on the left edge with quick jumps to home, chat, DMs, games, apps, and settings. toggle it in settings.</p>
+    <p><b>sidebar</b> — new slim quick-nav bar with jumps to home, chat, DMs, games, apps, and settings. off by default, turn it on in settings.</p>
     <p><b>kindle sites</b> — new section on the all-apps screen with links to other kindle-made spots.</p>
     <p><b>limited-time pets</b> — ghost pet (until nov 8) and turkey leg (until nov 30) in the store for 500 xp each. when they're gone, they're gone!</p>
     <h2>oct 17, 2026</h2>
@@ -1954,21 +1959,35 @@
     backupSetting("readium_online_list", on ? "1" : "0");
     updateOnlinePanel();
   };
-  /* ---------- quick-nav sidebar ---------- */
+  /* ---------- quick-nav sidebar (bottom bar, off by default, collapsible) ---------- */
   function isSidebarOn() {
-    try { return localStorage.getItem("readium_sidebar") !== "0"; } catch (e) { return true; }
+    try { return localStorage.getItem("readium_sidebar") === "1"; } catch (e) { return false; }
+  }
+  function isSidebarCollapsed() {
+    try { return localStorage.getItem("readium_sidebar_c") === "1"; } catch (e) { return false; }
   }
   function updateSidebar() {
     var on = isSidebarOn();
+    var collapsed = isSidebarCollapsed();
     var nav = document.getElementById("side-nav");
-    if (nav) { nav.style.display = on ? "" : "none"; }
+    if (nav) {
+      nav.style.display = on ? "" : "none";
+      try { nav.classList.toggle("sb-collapsed", collapsed); } catch (e) {}
+    }
     try { document.body.classList.toggle("sb-on", on); } catch (e) {}
     var tgl = document.getElementById("set-sidebar-toggle");
     if (tgl) { tgl.textContent = "sidebar: " + (on ? "on" : "off"); }
+    var st = document.getElementById("sn-toggle");
+    if (st) { st.textContent = collapsed ? "▼ nav" : "▲ nav"; }
   }
   document.getElementById("set-sidebar-toggle").onclick = function () {
     var on = !isSidebarOn();
     try { localStorage.setItem("readium_sidebar", on ? "1" : "0"); } catch (e) {}
+    updateSidebar();
+  };
+  document.getElementById("sn-toggle").onclick = function () {
+    var c = !isSidebarCollapsed();
+    try { localStorage.setItem("readium_sidebar_c", c ? "1" : "0"); } catch (e) {}
     updateSidebar();
   };
   document.getElementById("sn-home").onclick = function () { goHome(); };
@@ -1999,7 +2018,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "critter-pvp-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "starfall-screen", "space-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "critter-pvp-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "starfall-screen", "space-screen", "2048-screen", "akin-screen", "quiz-screen", "creator-screen", "cube-screen", "cook-screen", "slide-screen", "impostor-screen", "fnaf-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
