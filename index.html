@@ -242,8 +242,8 @@
   #poll-list .poll-card { display: inline-block; vertical-align: top; width: 46%; margin: 1%; box-sizing: border-box; }
   .rep-row { border: 3px solid #990000; padding: 10px; margin-bottom: 10px; }
   .rep-row p { margin: 0 0 6px 0; font-size: 18px; }
-  #profile-popup, #signin-popup, #help-popup, #missed-popup { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-  #help-popup.hidden, #profile-popup.hidden, #signin-popup.hidden, #missed-popup.hidden, #confirm-popup.hidden, #top-logout.hidden, #user-chip.hidden { display: none !important; }
+  #profile-popup, #signin-popup, #help-popup, #missed-popup, #pvp-chal-popup { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  #help-popup.hidden, #profile-popup.hidden, #signin-popup.hidden, #missed-popup.hidden, #pvp-chal-popup.hidden, #confirm-popup.hidden, #top-logout.hidden, #user-chip.hidden { display: none !important; }
   #help-box { background: #ffffff; border: 3px solid #111111; padding: 18px; max-width: 85%; font-size: 18px; text-align: center; }
   #help-text { margin-bottom: 14px; }
   #confirm-popup {
@@ -1069,6 +1069,9 @@
   <div style="text-align:center;margin:8px 0;">
     <button id="snake-start-btn">start</button>
     <button id="snake-pause-btn" class="secondary">pause</button>
+    <div style="text-align:center;margin:8px 0;">
+      <label style="font-size:16px;"><input type="checkbox" id="snake-walls-cb" style="width:22px;height:22px;vertical-align:middle;"> die when hitting walls</label>
+    </div>
   </div>
   <p id="snake-msg" style="text-align:center;font-weight:bold;"></p>
   <div style="margin:12px 0;">
@@ -1108,9 +1111,14 @@
 <!-- CHANGELOG -->
 <div id="log-screen" class="hidden">
   <h1>changelog</h1>
+  <div style="margin-bottom:10px;"><button id="log-back-btn-top" class="secondary">back</button></div>
   <div id="log-entries">
     <h2>oct 17, 2026</h2>
+    <p><b>security fix</b> — mod and founder powers are now locked to chickn's exact account. before, anyone with "chickn" in their email or name could get mod powers, and impersonator accounts were abusing it. that's gone now.</p>
+    <p><b>username screening</b> — inappropriate usernames are now blocked at signup and show as "readerXXXX" everywhere instead of the dirty name. swept all existing usernames and banned the offenders.</p>
+    <p><b>stronger word filter</b> — the filter now catches way more: more slurs, more sexual terms, more insults, plus smarter leetspeak tricks (like 8 for b, 6 for g). polls are now filtered too, like everything else.</p>
     <p><b>starfall</b> — a brand-new mini RPG! explore 3 areas, dodge enemy bullet patterns, recruit Pip and Bramble, and pick your ending: fight or spare? 9 enemies and 3 bosses.</p>
+    <p><b>critter pvp battles</b> — challenge other players from their profile! turn-based battles with your real team, winner gets 20 xp. challenges expire after 5 minutes.</p>
     <p><b>critter catch update</b> — 24 critters now (stone, wind, and ice types are new!), with common/uncommon/rare rarities. starters evolve at level 8-10, and 5% of wilds are shiny! also harder: wilds can be stronger than you, bad matchups get resisted, traps are rarer, and wipes only revive at 25% hp. bug fixes too: caught critters now have the right stats for their level.</p>
     <p><b>polls show who posted</b> — every poll now says "posted by [name]" so you don't have to type your name in the question anymore.</p>
     <p><b>alchemy cloud backup</b> — your discovered elements are now backed up online, so they come back even if the kindle wipes its saved data.</p>
@@ -1241,6 +1249,15 @@
   <div id="critter-main"></div>
   <div id="winboard-critter" style="margin-top:14px"></div>
   <button id="critter-back-btn" class="secondary">back</button>
+</div>
+
+<!-- CRITTER PVP BATTLE -->
+<div id="critter-pvp-screen" class="hidden">
+  <h1>critter battle</h1>
+  <div id="pvp-main"></div>
+  <div style="margin-top:10px;">
+    <button id="pvp-forfeit-btn" class="secondary">forfeit</button>
+  </div>
 </div>
 
 <!-- SOLITAIRE -->
@@ -1383,8 +1400,19 @@
     <div id="pp-badges" style="margin:8px 0;"></div>
     <button id="pp-dm-btn" class="secondary">dm</button>
     <button id="pp-reqdm-btn" class="secondary">request dm</button>
+    <button id="pp-chal-btn" class="secondary">challenge</button>
     <button id="pp-tip-btn" class="secondary">tip xp</button>
     <button id="pp-close-btn" class="secondary">close</button>
+  </div>
+</div>
+
+<!-- PVP CHALLENGE POPUP -->
+<div id="pvp-chal-popup" class="hidden">
+  <div style="background:#ffffff;max-width:420px;width:92%;padding:16px;border:2px solid #333333;">
+    <h2>critter battle challenge!</h2>
+    <p id="pvp-chal-text"></p>
+    <button id="pvp-chal-accept">accept</button>
+    <button id="pvp-chal-decline" class="secondary">decline</button>
   </div>
 </div>
 
@@ -1431,6 +1459,8 @@
   var dmReqFirst = true;
   var dmConvosRef = null;
   var dmMsgWatch = {};
+  var dmUnread = {};
+  var lastDmConvoData = null;
   var mentionRef = null;
   var pinsRef = null;
   var dashReportsRef = null;
@@ -1475,21 +1505,37 @@
   var currentChatTitle = null;
 
   /* ---------- word filter (catches tricks) ---------- */
-  var BANNED = ["fuck","fucking","fucker","motherfucker","shit","shitty","bitch","bitches","bitchy","ass","asshole","dick","dickhead","pussy","cunt","whore","slut","slutty","bastard","tits","titty","boob","boobs","cock","cum","dildo","porn","hentai","nigger","nigga","faggot","fag","retard","retarded","horny","masturbate","sexy"];
+  var BANNED = ["fuck","fucking","fucker","motherfucker","shit","shitty","shite","bitch","bitches","bitchy","ass","asshole","asshead","asswipe","dick","dickhead","pussy","cunt","whore","slut","slutty","bastard","tits","titty","boob","boobs","cock","cocksucker","cum","dildo","porn","pornhub","onlyfans","hentai",
+    "nigger","nigga","nibba","niglet","faggot","fag","kike","spic","chink","gook","wetback","beaner","towelhead","redskin","paki","coon","retard","retarded","dyke","tranny","shemale","ladyboy","midget","nazi","hitler","kkk","schizo",
+    "skank","thot","bimbo","hoe","cuck","prick","twat","smut","wanker","douche","douchebag",
+    "blowjob","handjob","orgasm","vagina","penis","nipple","clit","jizz","wank","jerkoff","ejaculate","semen","queef","creampie","deepthroat","doggystyle",
+    "anal","rape","rapist","molest","molester","incest","pedo","nsfw","nudes","naked","sexting","erotic","fetish","kinky","bdsm","aroused",
+    "panties","lingerie","stripper","hooker","prostitute","pimp","sugardaddy",
+    "shithead","fuckhead","dumbass","jackass","dipshit","bullshit","horseshit","apeshit","butthole","piss","suck",
+    "dox","doxx","swatting","kys","kms","gyp","gypped",
+    "horny","masturbate","sexy"];
   function leetReplace(s) {
     return String(s).toLowerCase()
-      .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a")
-      .replace(/5/g, "s").replace(/7/g, "t").replace(/@/g, "a").replace(/\$/g, "s")
+      .replace(/0/g, "o").replace(/1/g, "i").replace(/2/g, "z").replace(/3/g, "e").replace(/4/g, "a")
+      .replace(/5/g, "s").replace(/6/g, "g").replace(/7/g, "t").replace(/8/g, "b").replace(/9/g, "g")
+      .replace(/@/g, "a").replace(/\$/g, "s")
       .replace(/!/g, "i").replace(/\+/g, "t");
   }
   function lightNorm(s) { return leetReplace(s).replace(/(.)\1+/g, "$1"); }
   function aggroNorm(s) { return lightNorm(s).replace(/[^a-z]/g, ""); }
   var BANNED_NORM = [];
   for (var bi = 0; bi < BANNED.length; bi++) { BANNED_NORM.push(aggroNorm(BANNED[bi])); }
-  /* innocent words that happen to contain a banned chunk */
-  var SAFE_WORDS = ["password","classic","class","pass","grass","mass","bass","assist","asset","document","cucumber","title","peacock","scunthorpe","shitake","cocktail"];
+  /* innocent words that happen to contain a banned chunk.
+     NOTE: safe words use gentle normalization (no repeat-collapse, no leet) so that
+     e.g. "bass" does not become "bas" and strip the "bas" out of "bastard"/"dumbass". */
+  var SAFE_WORDS = ["password","classic","class","pass","grass","mass","bass","assist","asset","document","cucumber","title","peacock","scunthorpe","shitake","cocktail",
+    "analyze","analysis","analogy","banal","canal",
+    "grape","scrape","drape","trapeze",
+    "torpedo","pedometer","speedometer","spedomter",
+    "spice","spicy","auspicious","despicable","conspicuous",
+    "raccoon","raccoons","tycoon","cocoon","cuckoo","cucko"];
   var SAFE_NORM = [];
-  for (var si = 0; si < SAFE_WORDS.length; si++) { SAFE_NORM.push(aggroNorm(SAFE_WORDS[si])); }
+  for (var si = 0; si < SAFE_WORDS.length; si++) { SAFE_NORM.push(SAFE_WORDS[si].toLowerCase().replace(/[^a-z]/g, "")); }
   /* short banned words get a fuzzy boundary check so "was"/"has"/"ask" don't trip it */
   function fuzzyShortRe(norm) {
     return new RegExp("(^|[^a-z])" + norm.split("").join("[^a-z]*") + "([^a-z]|$)");
@@ -1515,6 +1561,13 @@
   /* simple inline starring for the obvious cases */
   var BANNED_RE = new RegExp("\\b(" + BANNED.join("|") + ")\\b", "gi");
   function censor(s) { return String(s).replace(BANNED_RE, "****"); }
+  /* display-time username screening: dirty names show as readerXXXX instead */
+  function cleanName(name, uid) {
+    var nm = String(name == null ? "Reader" : name);
+    if (!filterHit(nm)) { return nm; }
+    var suf = String(uid || "").replace(/[^a-zA-Z0-9]/g, "").substring(0, 4);
+    return "reader" + (suf || "anon");
+  }
   /* custom text emojis — plain ASCII so every Kindle can show them */
   var EMOJIS = ["<3", ":D", ":3", ":O", ":(", "+1", "-1"];
 
@@ -1694,7 +1747,7 @@
         dot.className = "on-dot";
         var btn = document.createElement("button");
         btn.className = "on-name";
-        btn.textContent = r.name;
+        btn.textContent = cleanName(r.name, r.uid);
         btn.onclick = function () { openProfileByName(r.name); };
         row.appendChild(dot);
         row.appendChild(btn);
@@ -1739,7 +1792,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "starfall-screen", "space-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "critter-pvp-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "starfall-screen", "space-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -1972,22 +2025,13 @@
       }
     } catch (e) {}
   }
+  // chickn's actual account. founder = this exact UID and nothing else.
+  // (name/email substring checks were abused by impersonator accounts - never use them.)
+  var FOUNDER_UID = "393cJa8SHXbuHTX4CTBf2yS4ePi1";
   function checkMod() {
     var u = auth.currentUser;
-    // founder check via email (bulletproof - can't glitch like displayName)
-    var emailLower = (!!u && u.email) ? u.email.toLowerCase() : "";
-    var isChicknEmail = emailLower === "chickn@readium.chat" || emailLower.indexOf("chickn") !== -1;
-    var dnLower = "";
-    try { dnLower = displayName().toLowerCase(); } catch (e) {}
-    isFounder = !!u && (isChicknEmail || dnLower === "chickn");
+    isFounder = !!u && u.uid === FOUNDER_UID;
     isMod = isFounder;
-    // fallback: check users record name too
-    if (u && !isFounder) {
-      db.ref("users/" + u.uid + "/name").once("value", function (nsnap) {
-        var nm = String(nsnap.val() || "").toLowerCase();
-        if (nm === "chickn") { isFounder = true; isMod = true; updateDashBtn(); }
-      });
-    }
     modUids = {};
     db.ref("mods").once("value", function (msnap) {
       var mv = msnap.val() || {};
@@ -2002,8 +2046,9 @@
     }
   }
   function isModUid(uid, name) {
+    if (uid && uid === FOUNDER_UID) { return true; }
     if (uid && modUids[uid]) { return true; }
-    return String(name || "").toLowerCase() === "chickn";
+    return false;
   }
   function styleModName(el, uid, name) {
     if (isModUid(uid, name)) {
@@ -2072,6 +2117,8 @@
     if (mentionRef) { mentionRef.off(); mentionRef = null; }
     if (pinsRef) { pinsRef.off(); pinsRef = null; }
     if (dashReportsRef) { dashReportsRef.off(); dashReportsRef = null; }
+    if (pvpChalRef) { pvpChalRef.off(); pvpChalRef = null; }
+    if (pvpRef) { pvpRef.off(); pvpRef = null; }
     if (dashBansRef) { dashBansRef.off(); dashBansRef = null; }
     if (hoodFeedRef) { hoodFeedRef.off(); hoodFeedRef = null; }
     for (var hk in hoodCommentsRefs) { hoodCommentsRefs[hk].off(); }
@@ -2420,9 +2467,10 @@
         var n = data[k] || {};
         var b = document.createElement("button");
         b.className = "room-btn secondary";
-        if (n.kind === "follow") { b.textContent = (n.from || "someone") + " posted in the neighborhood"; }
-        else if (n.kind === "reply") { b.textContent = (n.from || "someone") + " replied to your neighborhood post"; }
-        else { b.textContent = (n.from || "someone") + " mentioned you in " + (n.title || "chat"); }
+        var mfrom = cleanName(n.from || "someone", "");
+        if (n.kind === "follow") { b.textContent = mfrom + " posted in the neighborhood"; }
+        else if (n.kind === "reply") { b.textContent = mfrom + " replied to your neighborhood post"; }
+        else { b.textContent = mfrom + " mentioned you in " + (n.title || "chat"); }
         b.onclick = function () {
           db.ref("mentionNotifs/" + myUid() + "/" + k).remove();
           if ((n.refPath || "") === "hoodPosts") { enterHood(); }
@@ -2440,9 +2488,10 @@
   /* ---------- what did you miss ---------- */
   var missedChecked = false;
   function mentionLabelFor(n) {
-    if (n.kind === "follow") { return (n.from || "someone") + " posted in the neighborhood"; }
-    if (n.kind === "reply") { return (n.from || "someone") + " replied to your neighborhood post"; }
-    return (n.from || "someone") + " mentioned you in " + (n.title || "chat");
+    var mfrom = cleanName(n.from || "someone", "");
+    if (n.kind === "follow") { return mfrom + " posted in the neighborhood"; }
+    if (n.kind === "reply") { return mfrom + " replied to your neighborhood post"; }
+    return mfrom + " mentioned you in " + (n.title || "chat");
   }
   function showMissed(items) {
     var box = document.getElementById("missed-list");
@@ -2741,6 +2790,8 @@
             var txt = String(m.text || "");
             if (txt.length > 60) { txt = txt.substring(0, 60) + "..."; }
             notify("new DM from " + (m.name || w.name), txt, function () { openDm(dmId, w.name); });
+            dmUnread[dmId] = true;
+            refreshDmDots();
           });
         })(others[i]);
       }
@@ -2828,6 +2879,7 @@
   }
 
   function renderDmConvos(data) {
+    lastDmConvoData = data;
     var box = document.getElementById("dm-convos");
     box.innerHTML = "";
     var keys = data ? Object.keys(data) : [];
@@ -2837,12 +2889,21 @@
         var c = data[otherUid] || {};
         var b = document.createElement("button");
         b.className = "room-btn secondary";
-        b.textContent = c.name || "dm";
+        if (c.dmId && dmUnread[c.dmId]) {
+          var dot = document.createElement("span");
+          dot.textContent = "\u25CF ";
+          dot.style.color = "#e74c3c";
+          b.appendChild(dot);
+        }
+        b.appendChild(document.createTextNode(cleanName(c.name || "dm", otherUid)));
 
         b.onclick = function () { openDm(c.dmId, c.name || "dm"); };
         box.appendChild(b);
       })(keys[i]);
     }
+  }
+  function refreshDmDots() {
+    if (lastDmConvoData) { renderDmConvos(lastDmConvoData); }
   }
 
   document.getElementById("dm-search-btn").onclick = function () {
@@ -2865,7 +2926,7 @@
           found++;
           var b = document.createElement("button");
           b.className = "room-btn secondary";
-          b.textContent = nm;
+          b.textContent = cleanName(nm, uid);
           b.onclick = function () { startDmWith(uid, nm); };
           box.appendChild(b);
         })(uids[i]);
@@ -2915,6 +2976,7 @@
   function openDm(dmId, otherName) {
     if (dmReqListRef) { dmReqListRef.off(); dmReqListRef = null; }
     if (dmConvoRef) { dmConvoRef.off(); dmConvoRef = null; }
+    if (dmId && dmUnread[dmId]) { delete dmUnread[dmId]; refreshDmDots(); }
     openChat("dms/" + dmId + "/messages", "dm: " + otherName, "dm");
   }
 
@@ -3108,10 +3170,10 @@
         p1.appendChild(b1);
         row.appendChild(p1);
         var p2 = document.createElement("p");
-        p2.textContent = '"' + censor(r.text || "") + '" — ' + (r.name || "?");
+        p2.textContent = '"' + censor(r.text || "") + '" — ' + cleanName(r.name || "?", r.uid);
         row.appendChild(p2);
         var p3 = document.createElement("p");
-        p3.textContent = "reported by " + (r.reporterName || "?") + " in " + (r.title || "?");
+        p3.textContent = "reported by " + cleanName(r.reporterName || "?", r.reporter) + " in " + (r.title || "?");
         row.appendChild(p3);
         if (r.notes) {
           var pn = document.createElement("p");
@@ -3879,11 +3941,14 @@
     if (snakePaused || !snakeRunning) return;
     snakeDir = snakeNextDir;
     var head = {x: snakeBody[0].x + snakeDir.x, y: snakeBody[0].y + snakeDir.y};
-    // walls wrap around (don't kill)
-    if (head.x < 0) head.x = SNAKE_GRID - 1;
-    if (head.x >= SNAKE_GRID) head.x = 0;
-    if (head.y < 0) head.y = SNAKE_GRID - 1;
-    if (head.y >= SNAKE_GRID) head.y = 0;
+    // walls: wrap around, or kill if the "die on walls" setting is on
+    if (head.x < 0 || head.x >= SNAKE_GRID || head.y < 0 || head.y >= SNAKE_GRID) {
+      if (snakeDieOnWalls()) { snakeGameOver(); return; }
+      if (head.x < 0) head.x = SNAKE_GRID - 1;
+      if (head.x >= SNAKE_GRID) head.x = 0;
+      if (head.y < 0) head.y = SNAKE_GRID - 1;
+      if (head.y >= SNAKE_GRID) head.y = 0;
+    }
     // check self collision
     for (var i = 0; i < snakeBody.length; i++) {
       if (snakeBody[i].x === head.x && snakeBody[i].y === head.y) {
@@ -3951,7 +4016,7 @@
         arr.sort(function (a, b) { return (b.length || 0) - (a.length || 0); });
         if (!arr.length) { box.innerHTML = "<p>no scores yet!</p>"; return; }
         var h = "<ol>";
-        for (var i = 0; i < arr.length; i++) h += "<li>" + censor(arr[i].name || "?") + " - " + arr[i].length + "</li>";
+        for (var i = 0; i < arr.length; i++) h += "<li>" + cleanName(arr[i].name || "?", "") + " - " + arr[i].length + "</li>";
         box.innerHTML = h + "</ol>";
       });
       // most food board
@@ -3963,7 +4028,7 @@
         arr.sort(function (a, b) { return (b.food || 0) - (a.food || 0); });
         if (!arr.length) { box.innerHTML = "<p>no scores yet!</p>"; return; }
         var h = "<ol>";
-        for (var i = 0; i < arr.length; i++) h += "<li>" + censor(arr[i].name || "?") + " - " + arr[i].food + "</li>";
+        for (var i = 0; i < arr.length; i++) h += "<li>" + cleanName(arr[i].name || "?", "") + " - " + arr[i].food + "</li>";
         box.innerHTML = h + "</ol>";
       });
     } catch (e) {}
@@ -3979,6 +4044,17 @@
     snakePaused = !snakePaused;
     this.textContent = snakePaused ? "resume" : "pause";
   };
+  function snakeDieOnWalls() {
+    try { return localStorage.getItem("readium_snake_walls") === "1"; } catch (e) { return false; }
+  }
+  (function () {
+    var cb = document.getElementById("snake-walls-cb");
+    if (!cb) { return; }
+    try { cb.checked = localStorage.getItem("readium_snake_walls") === "1"; } catch (e) {}
+    cb.onchange = function () {
+      try { localStorage.setItem("readium_snake_walls", cb.checked ? "1" : "0"); } catch (e) {}
+    };
+  })();
   document.getElementById("snake-back-btn").onclick = function () {
     snakeRunning = false; snakePaused = false;
     if (snakeTimer) clearInterval(snakeTimer);
@@ -4235,7 +4311,8 @@
     box.innerHTML = "";
     var i = 0;
     var p = document.createElement("p");
-    p.style.fontSize = "16px";
+    p.style.fontSize = "22px";
+    p.style.lineHeight = "1.4";
     box.appendChild(p);
     var b = document.createElement("button");
     box.appendChild(b);
@@ -5271,7 +5348,7 @@
     var pp = document.getElementById("pp-pfp");
     pp.innerHTML = "";
     pp.appendChild(pfpImg(rec.pfp || blankPfp(), 4));
-    document.getElementById("pp-name").textContent = rec.name || "user";
+    document.getElementById("pp-name").textContent = cleanName(rec.name || "user", uid);
     var ppn = document.getElementById("pp-name");
     var ppt = petTagFor(rec.pet);
     if (ppt) { ppt.style.width = "28px"; ppt.style.height = "28px"; ppn.appendChild(ppt); }
@@ -5290,15 +5367,19 @@
     var fb = document.getElementById("pp-follow-btn");
     var dmb = document.getElementById("pp-dm-btn");
     var rdb = document.getElementById("pp-reqdm-btn");
+    var chb = document.getElementById("pp-chal-btn");
     if (uid === me) {
       fb.className = "mini secondary hidden";
       dmb.className = "mini secondary hidden";
       rdb.className = "mini secondary hidden";
+      chb.className = "mini secondary hidden";
     } else {
       fb.className = "mini secondary";
       dmb.className = "mini secondary";
       rdb.className = "mini secondary";
+      chb.className = "mini secondary";
       rdb.textContent = "request dm";
+      chb.textContent = "challenge";
       db.ref("follows/" + me + "/" + uid).once("value", function (snap) {
         fb.textContent = snap.exists() ? "unfollow" : "follow";
       });
@@ -5308,6 +5389,19 @@
       db.ref("userDms/" + me + "/" + uid).once("value", function (snap) {
         if (snap.exists()) { rdb.textContent = "requested"; }
       });
+      // show "challenged!" if a pending pvp challenge exists between us
+      try {
+        db.ref("critterChallenges").once("value", function (snap) {
+          var v = snap.val() || {};
+          for (var k in v) {
+            var c = v[k] || {};
+            if (c.status === "pending" && ((c.from === me && c.to === uid) || (c.from === uid && c.to === me))) {
+              chb.textContent = "challenged!";
+              break;
+            }
+          }
+        });
+      } catch (e) {}
     }
     renderPopupBadges(uid);
     document.getElementById("profile-popup").className = "";
@@ -5756,7 +5850,7 @@
     var ns = document.createElement("span");
     ns.className = "name";
     var urecF = usersByName[String(m.name || "").toLowerCase()];
-    ns.textContent = censor(flairName(m.name || "Reader", urecF ? urecF.rec : null));
+    ns.textContent = cleanName(flairName(m.name || "Reader", urecF ? urecF.rec : null), m.uid);
     styleModName(ns, urecF ? urecF.uid : null, m.name);
     var ptag = petTagFor(urecF && urecF.rec ? urecF.rec.pet : null);
     if (ptag) { ns.appendChild(ptag); }
@@ -5779,7 +5873,7 @@
       if (snippet.length > 60) { snippet = snippet.substring(0, 60) + "..."; }
       var rq = document.createElement("div");
       rq.className = "reply-quote";
-      rq.textContent = "\u21B5 " + censor(m.replyTo.name || "") + ": " + censor(snippet);
+      rq.textContent = "\u21B5 " + cleanName(m.replyTo.name || "", "") + ": " + censor(snippet);
       wrap.appendChild(rq);
     }
     wrap.appendChild(renderBody(censor(m.text || "")));
@@ -6114,7 +6208,7 @@
     wrap.id = "hood-" + postId;
     var head = document.createElement("p");
     var b = document.createElement("b");
-    b.textContent = censor(p.name || "Reader");
+    b.textContent = cleanName(p.name || "Reader", p.uid);
     styleModName(b, p.uid, p.name);
     head.appendChild(b);
     var hpt = petTagForName(p.name);
@@ -6210,7 +6304,7 @@
           d.appendChild(cpi);
         }
         var nm = document.createElement("b");
-        nm.textContent = censor(c.name || "Reader") + ": ";
+        nm.textContent = cleanName(c.name || "Reader", c.uid) + ": ";
         var tx = document.createElement("span");
         tx.textContent = censor(c.text || "");
         d.appendChild(nm);
@@ -6859,6 +6953,7 @@
     }
   })();
   document.getElementById("log-back-btn").onclick = goHome;
+  document.getElementById("log-back-btn-top").onclick = goHome;
   document.getElementById("gm-bot-btn").onclick = function () { if (gmGame === "ttt") { startBotGame(); } else if (gmGame === "c4") { startC4Bot(); } else if (gmGame === "chess") { startChessBot(); } };
   document.getElementById("gm-host-btn").onclick = function () { if (gmGame === "ttt") { hostGame(); } else if (gmGame === "c4") { hostC4Game(); } else if (gmGame === "chess") { hostChessGame(); } else if (gmGame === "pic") { hostPicGame(); } };
   document.getElementById("gm-back-btn").onclick = enterGames;
@@ -8675,12 +8770,12 @@ function loadBoard() {
           rk.className = "board-rank"; rk.textContent = (rank + 1) + ".";
           var nm = document.createElement("span");
           var urec = users[r.uid];
-          nm.textContent = (urec && urec.name) || "???";
+          nm.textContent = cleanName((urec && urec.name) || "???", r.uid);
           if (nm.textContent === "???" && r.uid) {
             (function (nmEl, uid) {
               db.ref("users/" + uid + "/name").once("value", function (nsnap) {
                 var n = nsnap.val();
-                if (n) { nmEl.textContent = n; styleModName(nmEl, uid, n); }
+                if (n) { nmEl.textContent = cleanName(n, uid); styleModName(nmEl, uid, n); }
               });
             })(nm, r.uid);
           }
@@ -11985,6 +12080,296 @@ function flairName(name, rec) {
     critterRender();
     critterRestore(); // pull cloud backup in case localStorage was wiped
   }
+  /* ---------- critter pvp challenges ---------- */
+  var pvpBattleId = null;
+  var pvpBattle = null;
+  var pvpRef = null;
+  var pvpChalRef = null;
+  var pvpRewarded = {};
+  var pvpChalSeen = {};
+  var pvpChalFirst = true;
+  function pvpSnapTeam(team) {
+    return (team || []).map(function (c) {
+      var alive = (c.hp || 0) > 0;
+      return { id: c.id, name: c.name, type: c.type, lvl: c.lvl, hp: Math.max(0, c.hp || 0), maxHp: c.maxHp || c.hp || 1, atk: c.atk, shiny: !!c.shiny, evolved: !!c.evolved, fainted: !alive };
+    });
+  }
+  function pvpTeamAlive(team) {
+    for (var i = 0; i < (team || []).length; i++) { if (!team[i].fainted && team[i].hp > 0) { return true; } }
+    return false;
+  }
+  function pvpFirstAlive(team) {
+    for (var i = 0; i < (team || []).length; i++) { if (!team[i].fainted && team[i].hp > 0) { return i; } }
+    return 0;
+  }
+  function pvpMySide(b) { return b.p1.uid === myUid() ? b.p1 : b.p2; }
+  function pvpFoeSide(b) { return b.p1.uid === myUid() ? b.p2 : b.p1; }
+  function pvpWrite(b) {
+    if (!pvpBattleId) { return; }
+    try {
+      b.updatedAt = Date.now();
+      db.ref("critterBattles/" + pvpBattleId).set(b);
+    } catch (e) {}
+  }
+  document.getElementById("pp-chal-btn").onclick = function () {
+    var me = myUid();
+    if (!me || !ppUid || ppUid === me) { return; }
+    critterLoad();
+    if (!pvpTeamAlive(pvpSnapTeam(critterSave.team))) { flashNotice("catch some critters first!"); return; }
+    var btn = document.getElementById("pp-chal-btn");
+    try {
+      db.ref("critterChallenges").once("value", function (snap) {
+        var v = snap.val() || {};
+        for (var k in v) {
+          var c = v[k] || {};
+          if (c.status === "pending" && ((c.from === me && c.to === ppUid) || (c.from === ppUid && c.to === me))) {
+            flashNotice("challenge already pending!"); return;
+          }
+        }
+        try {
+          db.ref("critterChallenges").push({
+            from: me, fromName: displayName(), to: ppUid,
+            toName: document.getElementById("pp-name").textContent || "someone",
+            team: pvpSnapTeam(critterSave.team),
+            status: "pending", at: Date.now()
+          }, function () {
+            btn.textContent = "challenged!";
+            flashNotice("challenge sent!");
+          });
+        } catch (e) { flashNotice("couldn't send challenge."); }
+      });
+    } catch (e) {}
+  };
+  function pvpShowChallenge(key, c) {
+    document.getElementById("pvp-chal-text").textContent = (c.fromName || "someone") + " challenged you to a critter battle!";
+    document.getElementById("pvp-chal-popup").className = "";
+    document.getElementById("pvp-chal-accept").onclick = function () {
+      document.getElementById("pvp-chal-popup").className = "hidden";
+      pvpAccept(key, c);
+    };
+    document.getElementById("pvp-chal-decline").onclick = function () {
+      document.getElementById("pvp-chal-popup").className = "hidden";
+      try { db.ref("critterChallenges/" + key + "/status").set("declined"); } catch (e) {}
+    };
+  }
+  function pvpAccept(key, c) {
+    var me = myUid();
+    if (!me) { return; }
+    critterLoad();
+    var myTeam = pvpSnapTeam(critterSave.team);
+    if (!pvpTeamAlive(myTeam)) { flashNotice("heal your critters first!"); return; }
+    if (!pvpTeamAlive(c.team || [])) {
+      flashNotice("their team is empty — cancelled.");
+      try { db.ref("critterChallenges/" + key + "/status").set("cancelled"); } catch (e) {}
+      return;
+    }
+    try {
+      var battleId = db.ref("critterBattles").push().key;
+      var p1team = c.team, p2team = myTeam;
+      var battle = {
+        p1: { uid: c.from, name: c.fromName || "someone", team: p1team, active: pvpFirstAlive(p1team) },
+        p2: { uid: me, name: displayName(), team: p2team, active: pvpFirstAlive(p2team) },
+        turn: c.from, status: "active", winner: null,
+        log: [(c.fromName || "someone") + " challenged " + displayName() + " to a battle!"],
+        updatedAt: Date.now()
+      };
+      db.ref("critterBattles/" + battleId).set(battle, function () {
+        try {
+          db.ref("critterChallenges/" + key + "/status").set("accepted");
+          db.ref("critterChallenges/" + key + "/battleId").set(battleId);
+        } catch (e) {}
+        enterPvp(battleId);
+      });
+    } catch (e) { flashNotice("couldn't start the battle."); }
+  }
+  function watchPvpChallenges() {
+    var uid = myUid();
+    if (!uid) { return; }
+    try {
+      if (pvpChalRef) { pvpChalRef.off(); }
+      pvpChalRef = db.ref("critterChallenges");
+      pvpChalRef.on("value", function (snap) {
+        var v = snap.val() || {};
+        var now = Date.now();
+        for (var k in v) {
+          (function (key) {
+            var c = v[key] || {};
+            // expire stale pending challenges (5 min)
+            if (c.status === "pending" && now - (c.at || 0) > 5 * 60 * 1000) {
+              try { db.ref("critterChallenges/" + key + "/status").set("expired"); } catch (e) {}
+              return;
+            }
+            // incoming challenge for me
+            if (c.to === uid && c.status === "pending" && !pvpChalSeen[key]) {
+              pvpChalSeen[key] = 1;
+              if (!pvpChalFirst) {
+                notify((c.fromName || "someone") + " challenged you!", "critter battle! tap to respond.", function () { pvpShowChallenge(key, c); });
+              }
+              return;
+            }
+            // my challenge got accepted -> battle started
+            if (c.from === uid && c.status === "accepted" && c.battleId && !pvpChalSeen[key + ":a"]) {
+              pvpChalSeen[key + ":a"] = 1;
+              if (!pvpChalFirst) {
+                notify("battle started!", (c.toName || "someone") + " accepted your challenge!", function () { enterPvp(c.battleId); });
+              }
+              return;
+            }
+            // my challenge got declined
+            if (c.from === uid && (c.status === "declined" || c.status === "expired" || c.status === "cancelled") && !pvpChalSeen[key + ":d"]) {
+              pvpChalSeen[key + ":d"] = 1;
+              if (!pvpChalFirst) {
+                notify("challenge " + c.status, (c.toName || "someone") + " didn't accept.", null);
+              }
+            }
+          })(k);
+        }
+        pvpChalFirst = false;
+      });
+    } catch (e) {}
+  }
+  function enterPvp(battleId) {
+    pvpBattleId = battleId;
+    if (pvpRef) { try { pvpRef.off(); } catch (e) {} pvpRef = null; }
+    pvpBattle = null;
+    showScreen("critter-pvp-screen");
+    document.getElementById("pvp-main").innerHTML = "<p>loading battle...</p>";
+    try {
+      pvpRef = db.ref("critterBattles/" + battleId);
+      pvpRef.on("value", function (snap) {
+        if (!snap.exists()) { return; }
+        pvpBattle = snap.val();
+        pvpRender();
+      });
+    } catch (e) {}
+  }
+  function pvpTeamDiv(side) {
+    var d = document.createElement("div");
+    (side.team || []).forEach(function (c, idx) {
+      var p = document.createElement("p");
+      p.style.margin = "2px 0";
+      p.textContent = (idx === side.active ? "> " : "") + c.name + " Lv" + c.lvl + " (" + c.hp + "/" + c.maxHp + ")" + (c.shiny ? " shiny" : "");
+      if (c.fainted || c.hp <= 0) { p.style.opacity = "0.4"; }
+      if (idx === side.active) { p.style.fontWeight = "bold"; }
+      d.appendChild(p);
+    });
+    return d;
+  }
+  function pvpRender() {
+    var box = document.getElementById("pvp-main");
+    var b = pvpBattle;
+    if (!box) { return; }
+    if (!b) { box.innerHTML = "<p>loading...</p>"; return; }
+    var me = pvpMySide(b), foe = pvpFoeSide(b);
+    box.innerHTML = "";
+    var fh = document.createElement("h2"); fh.textContent = foe.name + "'s team"; box.appendChild(fh);
+    box.appendChild(pvpTeamDiv(foe));
+    var mh = document.createElement("h2"); mh.textContent = "your team"; box.appendChild(mh);
+    box.appendChild(pvpTeamDiv(me));
+    var log = document.createElement("div");
+    log.style.cssText = "border:1px solid #999999;padding:6px;margin:10px 0;max-height:120px;overflow:auto;font-size:14px;";
+    (b.log || []).slice(-8).forEach(function (t) {
+      var p = document.createElement("p"); p.style.margin = "2px 0"; p.textContent = t; log.appendChild(p);
+    });
+    box.appendChild(log);
+    if (b.status === "done") {
+      if (!pvpRewarded[pvpBattleId]) {
+        pvpRewarded[pvpBattleId] = 1;
+        if (b.winner === myUid()) {
+          try { changeXp(myUid(), 20); } catch (e) {}
+          try { xpWinOnce("critter"); } catch (e) {}
+        }
+      }
+      var w = document.createElement("p");
+      w.style.cssText = "font-size:18px;font-weight:bold;";
+      w.textContent = b.winner === myUid() ? "you win! +20 xp" : (b.winner ? foe.name + " wins!" : "battle over");
+      box.appendChild(w);
+      var back = document.createElement("button");
+      back.textContent = "back to critters";
+      back.onclick = function () {
+        if (pvpRef) { try { pvpRef.off(); } catch (e) {} pvpRef = null; }
+        pvpBattleId = null; pvpBattle = null;
+        enterCritter();
+      };
+      box.appendChild(back);
+      return;
+    }
+    var mine = me.team[me.active];
+    var mustSwitch = mine && (mine.fainted || mine.hp <= 0);
+    if (b.turn === myUid() && mustSwitch) {
+      var cp = document.createElement("p"); cp.style.fontWeight = "bold";
+      cp.textContent = "your " + mine.name + " fainted! choose your next critter:";
+      box.appendChild(cp);
+    } else if (b.turn === myUid()) {
+      var tp = document.createElement("p"); tp.style.fontWeight = "bold"; tp.textContent = "your turn!";
+      box.appendChild(tp);
+      var ab = document.createElement("button"); ab.textContent = "attack"; ab.style.margin = "4px";
+      ab.onclick = function () { pvpAttack(); };
+      box.appendChild(ab);
+    } else {
+      var wp = document.createElement("p"); wp.textContent = "waiting for " + foe.name + "...";
+      box.appendChild(wp);
+    }
+    if (b.turn === myUid()) {
+      me.team.forEach(function (c, idx) {
+        if (idx === me.active || c.fainted || c.hp <= 0) { return; }
+        var sb = document.createElement("button");
+        sb.className = "mini secondary"; sb.style.margin = "4px";
+        sb.textContent = (mustSwitch ? "send " : "switch to ") + c.name + " (Lv" + c.lvl + ")";
+        sb.onclick = function () { pvpSwitch(idx); };
+        box.appendChild(sb);
+      });
+    }
+  }
+  function pvpAttack() {
+    var b = pvpBattle;
+    if (!b || b.status !== "active" || b.turn !== myUid() || pvpBattleId == null) { return; }
+    var me = pvpMySide(b), foe = pvpFoeSide(b);
+    var mine = me.team[me.active], theirs = foe.team[foe.active];
+    if (!mine || !theirs || mine.fainted || mine.hp <= 0) { return; }
+    var eff = critterEffectiveness(mine.type, theirs.type);
+    var dmg = Math.max(1, Math.round((mine.atk + Math.random() * 5) * eff));
+    theirs.hp = Math.max(0, theirs.hp - dmg);
+    var msg = mine.name + " dealt " + dmg + " to " + theirs.name + "!" + (eff > 1 ? " super effective!" : (eff < 1 ? " resisted..." : ""));
+    if (theirs.hp <= 0) {
+      theirs.fainted = true;
+      msg += " " + theirs.name + " fainted!";
+    }
+    b.log = (b.log || []).concat([msg]);
+    if (!pvpTeamAlive(foe.team)) {
+      b.status = "done";
+      b.winner = myUid();
+      b.log.push(me.name + " wins the battle!");
+    } else {
+      b.turn = foe.uid;
+    }
+    pvpWrite(b);
+  }
+  function pvpSwitch(idx) {
+    var b = pvpBattle;
+    if (!b || b.status !== "active" || b.turn !== myUid() || pvpBattleId == null) { return; }
+    var me = pvpMySide(b);
+    if (idx === me.active || me.team[idx].fainted || me.team[idx].hp <= 0) { return; }
+    me.active = idx;
+    b.log = (b.log || []).concat([me.name + " sent out " + me.team[idx].name + "!"]);
+    b.turn = pvpFoeSide(b).uid;
+    pvpWrite(b);
+  }
+  document.getElementById("pvp-forfeit-btn").onclick = function () {
+    var b = pvpBattle;
+    if (!b || b.status !== "active") {
+      if (pvpRef) { try { pvpRef.off(); } catch (e) {} pvpRef = null; }
+      pvpBattleId = null; pvpBattle = null;
+      enterCritter();
+      return;
+    }
+    if (!confirm("forfeit the battle?")) { return; }
+    var foe = pvpFoeSide(b);
+    b.status = "done";
+    b.winner = foe.uid;
+    b.log = (b.log || []).concat([pvpMySide(b).name + " forfeited!"]);
+    pvpWrite(b);
+  };
   function critterRender() {
     var box = document.getElementById("critter-main");
     box.innerHTML = "";
@@ -12399,10 +12784,9 @@ function flairName(name, rec) {
               });
             }
           })(meta, metaBase, p);
-          // pin button for chickn (founder)
+          // pin button for the founder only (exact uid - never by name)
           (function (pollId, isPinned) {
-            db.ref("users/" + myUid() + "/name").once("value", function (nsnap) {
-              if (nsnap.val() === "chickn") {
+            if (myUid() === FOUNDER_UID) {
                 var pinBtn = document.createElement("button");
                 pinBtn.className = "mini secondary";
                 pinBtn.textContent = isPinned ? "unpin" : "pin to top";
@@ -12424,8 +12808,7 @@ function flairName(name, rec) {
                   if (pollCommentsRefs[pollId]) { pollCommentsRefs[pollId].off(); delete pollCommentsRefs[pollId]; }
                 };
                 wrap.appendChild(delBtn);
-              }
-            });
+            }
           })(pid, !!p.pinned);
           // comments under each poll
           (function (pollId) {
@@ -12490,7 +12873,7 @@ function flairName(name, rec) {
           d.appendChild(cpi);
         }
         var nm = document.createElement("b");
-        nm.textContent = censor(c.name || "Reader") + ": ";
+        nm.textContent = cleanName(c.name || "Reader", c.uid) + ": ";
         var tx = document.createElement("span");
         tx.textContent = censor(c.text || "");
         d.appendChild(nm);
@@ -12993,6 +13376,7 @@ function flairName(name, rec) {
     }
     var msg = document.getElementById("poll-msg");
     if (!q || opts.length < 2) { msg.textContent = "need a question and at least 2 options."; return; }
+    if (!isMod && (filterHit(q) || opts.some(function (o) { return filterHit(o); }))) { msg.textContent = "keep it clean!"; msg.style.color = "#990000"; return; }
     var ref = db.ref("polls").push();
     db.ref("users/" + myUid() + "/name").once("value", function (nsnap) {
       var nm = nsnap.val() || "someone";
@@ -13697,6 +14081,7 @@ function flairName(name, rec) {
       watchXp();
       watchDmRequests();
       watchDmMessages();
+      watchPvpChallenges();
       syncTimezoneFromCloud();
       updatePollDot();
       checkBanMessage();
