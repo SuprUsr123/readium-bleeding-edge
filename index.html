@@ -10629,6 +10629,11 @@ function flairName(name, rec) {
       } else {
         alert(msg);
       }
+      // an actively banned account is signed straight back out, so banned
+      // users can no longer stay logged in or show up on the online list
+      try { stopPresence(); } catch (e) {}
+      try { db.ref("presence/" + u.uid).remove(); } catch (e2) {}
+      try { auth.signOut(); } catch (e3) {}
     });
   }
 
