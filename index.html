@@ -3362,6 +3362,15 @@
       })(btns[i]);
     }
   })();
+  /* banned users lose all their XP */
+  function zeroXp(uid) {
+    if (!uid) { return; }
+    db.ref("xp/" + uid).set({ xp: 0 });
+    var now2 = new Date();
+    db.ref("xpDaily/" + xpDayKey(now2) + "/" + uid).set(0);
+    db.ref("xpWeekly/" + xpWeekKey(now2) + "/" + uid).set(0);
+    db.ref("xpMonthly/" + xpMonthKey(now2) + "/" + uid).set(0);
+  }
   function banUser(uid, name) {
     if (!uid) { return; }
     var reasonEl = document.getElementById("ban-reason");
@@ -3370,6 +3379,7 @@
     if (banMinutes > 0) { rec.until = Date.now() + banMinutes * 60000; }
     db.ref("bans/" + uid).set(rec, function () {
       if (reasonEl) { reasonEl.value = ""; }
+      zeroXp(uid);
       wipeBannedContent(uid);
     });
   }
