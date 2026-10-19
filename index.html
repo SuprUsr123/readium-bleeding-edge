@@ -524,7 +524,7 @@
 <!-- ALL APPS -->
 <div id="apps-screen" class="hidden">
   <h1>all apps</h1>
-  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-poxel-btn" class="secondary">poxel</button><button id="apps-flip-btn" class="secondary">flipbook</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
+  <button id="apps-suggest-btn" class="secondary">suggestions</button><button id="apps-store-btn" class="secondary">store</button><button id="apps-board-btn" class="secondary">leaderboard</button><button id="apps-poll-btn" class="secondary">polls <span id="poll-dot2" class="dot hidden"></span></button><button id="apps-log-btn" class="secondary">changelog</button><button id="apps-settings-btn" class="secondary">settings</button><button id="apps-chatbot-btn" class="secondary">assistant</button><button id="apps-muse-btn" class="secondary hidden">muse</button><button id="apps-mhapply-btn" class="secondary">apply to be a mod!</button><button id="apps-poxel-btn" class="secondary">poxel</button><button id="apps-flip-btn" class="secondary">flipbook</button><button id="apps-fullscreen-btn" class="secondary">full screen</button><button id="apps-donate-btn" class="secondary">support readium</button><button id="apps-back-btn" class="secondary">back</button>
   <h2 style="font-size:20px;margin-top:16px">kindle sites</h2>
   <p style="font-size:16px">other spots made for kindle browsers:</p>
   <p><a href="https://rekindle.ink" target="_blank" rel="noopener">rekindle</a> — kindle dashboard with apps and games</p>
@@ -548,6 +548,22 @@
   <input id="muse-input" type="text" placeholder="type a command..." style="width: 70%;">
   <button id="muse-send-btn">send</button>
   <button id="muse-back-btn" class="secondary">back</button>
+</div>
+
+<!-- APPLY TO BE A MOD (MH applications) -->
+<div id="mhapply-screen" class="hidden">
+  <h1>apply to be a mod!</h1>
+  <p style="font-size:16px">Want to become a Mod Helper? Helpers can delete messages and mute rule-breakers for up to an hour. chickn reviews every application.</p>
+  <div id="mhapply-info" style="font-size:16px;background:#f5f5f5;padding:8px;margin:8px 0;border-radius:8px;"></div>
+  <div id="mhapply-form">
+    <label for="mhapply-reason">Why do you want to be a mod helper? (10-500 chars)</label>
+    <textarea id="mhapply-reason" maxlength="500" placeholder="tell us why you'd be a good helper..." style="width:96%;min-height:100px;"></textarea>
+    <p><label><input type="checkbox" id="mhapply-rules"> I've read the rules and I understand what mod helpers do.</label></p>
+    <button id="mhapply-submit">submit application</button>
+    <p id="mhapply-msg" style="font-size:16px"></p>
+  </div>
+  <div id="mhapply-status" style="font-size:16px"></div>
+  <button id="mhapply-back-btn" class="secondary">back</button>
 </div>
 
 <!-- CHATBOT (for everyone) -->
@@ -794,6 +810,19 @@
     <button id="dash-mod-add-btn" class="secondary">make moderator</button>
     <button id="dash-mods-toggle" class="secondary section-head">moderator list +</button>
     <div id="dash-mods-list-wrap" class="hidden section-body"><div id="dash-mod-list"></div></div>
+  </div>
+  <div id="dash-helpers-wrap" class="hidden">
+    <h2>mod helpers (MH)</h2>
+    <p style="font-size:16px">Only you see this. Helpers can delete messages and mute up to 1 hour. They cannot ban, pin, or manage mods.</p>
+    <input id="dash-helper-input" type="text" maxlength="20" placeholder="username...">
+    <button id="dash-helper-add-btn" class="secondary">make mod helper</button>
+    <button id="dash-helpers-toggle" class="secondary section-head">mod helper list +</button>
+    <div id="dash-helpers-list-wrap" class="hidden section-body"><div id="dash-helper-list"></div></div>
+  </div>
+  <div id="dash-mhapps-wrap" class="hidden">
+    <h2>mod helper applications</h2>
+    <p style="font-size:16px">Only you can approve or reject these.</p>
+    <div id="dash-mhapps-list"><p>loading...</p></div>
   </div>
   <button id="dash-home-btn" class="secondary">home</button>
 </div>
@@ -1155,6 +1184,8 @@
   <div style="margin-bottom:10px;"><button id="log-back-btn-top" class="secondary">back</button></div>
   <div id="log-entries">
     <h2>oct 18, 2026</h2>
+    <p><b>mod helpers (MH)</b> — new helper tier below mods! helpers can delete messages and mute rule-breakers for up to an hour. helper names show in <i>italics</i>.</p>
+    <p><b>apply to be a mod!</b> — new app where you can apply to become a mod helper. chickn reviews every application.</p>
     <p><b>8 games removed</b> — mind reader, quiz zone, character creator, cube dash, recipe rush, slide puzzle, find the impostor, and one night at readium's are gone. 2048 stays!</p>
     <p><b>pets gone for now</b> — the ghost and turkey leg pets are out of the store, and pet tags no longer show by anyone's name.</p>
     <p><b>pictionary rebuilt for kindle</b> — the drawing board is now a tap-and-drag pixel grid (like flipbook) instead of a canvas, so drawing actually works on the kindle browser.</p>
@@ -1551,6 +1582,8 @@
   var muteTimer = null;
   var painting = false;
   var isMod = false;
+  var helperUids = {};
+  var isHelper = false;
   var isFounder = false;
   var chatNearBottom = true;
   var confirmCb = null;
@@ -1890,7 +1923,7 @@
     return u ? (u.displayName || "Reader") : "Reader";
   }
   function showScreen(id) {
-    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "chatbot-screen", "critter-screen", "critter-pvp-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "starfall-screen", "space-screen", "2048-screen"];
+    var screens = ["home-screen", "msgs-screen", "mentions-screen", "hood-screen", "suggest-screen", "store-screen", "board-screen", "create-screen", "join-screen", "dm-screen", "dash-screen", "profile-screen", "settings-screen", "pfp-screen", "chat-screen", "games-screen", "gamemenu-screen", "life-screen", "ttt-screen", "c4-screen", "chess-screen", "pic-screen", "gol-screen", "sol-screen", "log-screen", "poll-screen", "apps-screen", "muse-screen", "mhapply-screen", "chatbot-screen", "critter-screen", "critter-pvp-screen", "alc-screen", "gamble-screen", "gametitle-screen", "event-screen", "donate-screen", "poxel-screen", "cookie-screen", "flipbook-screen", "snake-screen", "starfall-screen", "space-screen", "2048-screen"];
     for (var i = 0; i < screens.length; i++) {
       var el = document.getElementById(screens[i]);
       if (el) { el.className = (screens[i] === id) ? "" : "hidden"; }
@@ -2155,10 +2188,18 @@
       var mv = msnap.val() || {};
       for (var k in mv) { if (mv[k]) { modUids[k] = true; } }
     });
+    helperUids = {};
+    isHelper = false;
+    db.ref("helpers").once("value", function (hsnap) {
+      var hv = hsnap.val() || {};
+      for (var k in hv) { if (hv[k]) { helperUids[k] = true; } }
+      if (u && !isFounder && !isMod && helperUids[u.uid]) { isHelper = true; updateDashBtn(); }
+    });
     updateDashBtn();
     if (u && !isFounder) {
       db.ref("mods/" + u.uid).once("value", function (snap) {
         isMod = snap.exists();
+        if (!isMod && helperUids[u.uid]) { isHelper = true; }
         updateDashBtn();
       });
     }
@@ -2168,10 +2209,23 @@
     if (uid && modUids[uid]) { return true; }
     return false;
   }
+  function isHelperUid(uid) {
+    if (!uid || uid === FOUNDER_UID) { return false; }
+    if (modUids[uid]) { return false; }
+    return !!helperUids[uid];
+  }
+  function isModOrHelperUid(uid) {
+    return isModUid(uid) || isHelperUid(uid);
+  }
+  function canModerate() {
+    return isMod || isHelper;
+  }
   function styleModName(el, uid, name) {
     if (isModUid(uid, name)) {
       el.style.fontWeight = "bold";
       el.style.textDecoration = "underline";
+    } else if (isHelperUid(uid)) {
+      el.style.fontStyle = "italic";
     }
   }
   function petTagFor(pet) {
@@ -2185,6 +2239,7 @@
   function afterAuth() {
     closeSignin();
     checkMod();
+    checkMhDecisions();
     refreshEventTeamsCache();
     refreshHome();
     if (wantMsgs) { enterMsgs(); }
@@ -2267,6 +2322,7 @@
       wantHood = false;
       wantSuggest = false;
       isMod = false;
+      isHelper = false;
       isFounder = false;
       updateMsgsDot();
       auth.signOut();
@@ -3117,7 +3173,7 @@
 
   /* ---------- mod dashboard ---------- */
   function enterDash() {
-    if (!isMod) { goHome(); return; }
+    if (!canModerate()) { goHome(); return; }
     showScreen("dash-screen");
     loadDashStats();
     loadReports();
@@ -3129,6 +3185,28 @@
     // only founder can give/take XP
     var xpw = document.getElementById("dash-xp-wrap");
     if (xpw) { xpw.className = isFounder ? "" : "hidden"; }
+    // helpers only see 10 min and 1 hour ban options
+    var durBtns = document.getElementsByClassName("ban-dur");
+    for (var di = 0; di < durBtns.length; di++) {
+      var mins = parseInt(durBtns[di].getAttribute("data-min"), 10);
+      if (!isMod && !isFounder && mins !== 10 && mins !== 60) {
+        durBtns[di].style.display = "none";
+      } else {
+        durBtns[di].style.display = "";
+      }
+    }
+    // helpers section (founder only)
+    var hw = document.getElementById("dash-helpers-wrap");
+    if (hw) {
+      if (isFounder) { hw.className = ""; loadDashHelpers(); }
+      else { hw.className = "hidden"; }
+    }
+    // MH applications review (founder only)
+    var mhw = document.getElementById("dash-mhapps-wrap");
+    if (mhw) {
+      if (isFounder) { mhw.className = ""; loadMhApplications(); }
+      else { mhw.className = "hidden"; }
+    }
   }
   function loadDashStats() {
     var box = document.getElementById("dash-stats");
@@ -3497,10 +3575,16 @@
   }
   function banUser(uid, name) {
     if (!uid) { return; }
+    if (!canModerate()) { return; }
+    // helpers can only mute up to 1 hour (60 min)
+    var mins = banMinutes;
+    if (isHelper && !isMod) {
+      if (mins === 0 || mins > 60) { mins = 60; }
+    }
     var reasonEl = document.getElementById("ban-reason");
     var reason = reasonEl ? reasonEl.value.replace(/^\s+|\s+$/g, "") : "";
     var rec = { name: name || "user", at: Date.now(), by: displayName(), reason: reason || "no reason given" };
-    if (banMinutes > 0) { rec.until = Date.now() + banMinutes * 60000; }
+    if (mins > 0) { rec.until = Date.now() + mins * 60000; }
     db.ref("bans/" + uid).set(rec, function () {
       if (reasonEl) { reasonEl.value = ""; }
       zeroXp(uid);
@@ -3509,7 +3593,7 @@
   }
   /* delete everything a banned user posted: room + dm messages, hood posts/comments, suggestions/comments */
   function wipeBannedContent(uid) {
-    if (!isMod || !uid) { return; }
+    if (!canModerate() || !uid) { return; }
     var updates = {};
     function done() {
       var keys = Object.keys(updates);
@@ -3670,6 +3754,55 @@
       db.ref("mods/" + uid).set({ name: name, at: Date.now(), by: "chickn" }, function () {
         document.getElementById("dash-mod-input").value = "";
         loadDashMods();
+      });
+    });
+  };
+  /* ---------- mod helpers (MH) management (founder only) ---------- */
+  function loadDashHelpers() {
+    var box = document.getElementById("dash-helper-list");
+    box.innerHTML = "<p>loading...</p>";
+    db.ref("helpers").once("value", function (snap) {
+      var v = snap.val() || {};
+      var ks = Object.keys(v);
+      box.innerHTML = "";
+      if (!ks.length) { box.innerHTML = "<p>no mod helpers yet</p>"; }
+      for (var i = 0; i < ks.length; i++) {
+        (function (uid) {
+          var row = document.createElement("div");
+          row.className = "req-row";
+          var p = document.createElement("p");
+          p.textContent = v[uid].name || uid;
+          row.appendChild(p);
+          var rm = document.createElement("button");
+          rm.className = "mini secondary";
+          rm.textContent = "remove";
+          rm.onclick = function () {
+            askConfirm("Remove " + (v[uid].name || uid) + " as mod helper?", function () {
+              db.ref("helpers/" + uid).remove(function () { loadDashHelpers(); });
+            });
+          };
+          row.appendChild(rm);
+          box.appendChild(row);
+        })(ks[i]);
+      }
+    });
+  }
+  document.getElementById("dash-helpers-toggle").onclick = function () {
+    var w = document.getElementById("dash-helpers-list-wrap");
+    var t = document.getElementById("dash-helpers-toggle");
+    if (w.className.indexOf("hidden") >= 0) { w.className = "section-body"; t.textContent = "mod helper list \u2013"; }
+    else { w.className = "hidden section-body"; t.textContent = "mod helper list +"; }
+  };
+  document.getElementById("dash-helper-add-btn").onclick = function () {
+    var name = document.getElementById("dash-helper-input").value.replace(/^\s+|\s+$/g, "").toLowerCase();
+    if (!validUsername(name)) { return; }
+    db.ref("users").orderByChild("name").equalTo(name).once("value", function (snap) {
+      if (!snap.exists()) { return; }
+      var uid = Object.keys(snap.val())[0];
+      if (uid === FOUNDER_UID) { return; }
+      db.ref("helpers/" + uid).set({ name: name, at: Date.now(), by: FOUNDER_UID }, function () {
+        document.getElementById("dash-helper-input").value = "";
+        loadDashHelpers();
       });
     });
   };
@@ -6198,7 +6331,7 @@
       submitReport(pushId, m, currentRefPath, currentChatTitle || "chat");
     };
     actionsDiv.appendChild(repBtn);
-    if (isMod && auth.currentUser) {
+    if (canModerate() && auth.currentUser) {
       (function () {
         var del = document.createElement("button");
         del.className = "tiny secondary";
@@ -6522,7 +6655,7 @@
       })(postId, p.uid, p.name || "them");
       row.appendChild(apb);
     }
-    if (auth.currentUser && (isMod || p.uid === myUid())) {
+    if (auth.currentUser && (canModerate() || p.uid === myUid())) {
       var del = document.createElement("button");
       del.className = "mini secondary";
       del.textContent = "delete";
@@ -6575,7 +6708,7 @@
         d.appendChild(nm);
 
         d.appendChild(tx);
-        if (auth.currentUser && (isMod || c.uid === myUid())) {
+        if (auth.currentUser && (canModerate() || c.uid === myUid())) {
           var del = document.createElement("button");
           del.className = "mini secondary";
           del.textContent = "delete";
@@ -11091,15 +11224,25 @@ function flairName(name, rec) {
     "oct2026-gold": { name: "October Event Champion", color: "#ffd700" },
     "oct2026-silver": { name: "October Event Runner-up", color: "#c0c0c0" },
     "oct2026-bronze": { name: "October Event 3rd Place", color: "#cd7f32" },
-    "oct2026-team": { name: "Winning Team", color: "#ff6600" }
+    "oct2026-team": { name: "Winning Team", color: "#ff6600" },
+    "loyalty": { name: "Loyalty Badge", img: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAIAAABt+uBvAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAFfWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4KPHg6eG1wbWV0YSB4bWxuczp4PSdhZG9iZTpuczptZXRhLyc+CjxyZGY6UkRGIHhtbG5zOnJkZj0naHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyc+CgogPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9JycKICB4bWxuczpBdHRyaWI9J2h0dHA6Ly9ucy5hdHRyaWJ1dGlvbi5jb20vYWRzLzEuMC8nPgogIDxBdHRyaWI6QWRzPgogICA8cmRmOlNlcT4KICAgIDxyZGY6bGkgcmRmOnBhcnNlVHlwZT0nUmVzb3VyY2UnPgogICAgIDxBdHRyaWI6Q3JlYXRlZD4yMDI2LTEwLTE5PC9BdHRyaWI6Q3JlYXRlZD4KICAgICA8QXR0cmliOkRhdGE+eyZxdW90O2RvYyZxdW90OzomcXVvdDtEQUhZYWVURHNKTSZxdW90OywmcXVvdDt1c2VyJnF1b3Q7OiZxdW90O1VBRkp4cFhDN1JZJnF1b3Q7LCZxdW90O2JyYW5kJnF1b3Q7OiZxdW90O1NhbnRhIFJvc2EgQ291bnR5IERpc3RyaWN0IFNjaG9vbHMmcXVvdDt9PC9BdHRyaWI6RGF0YT4KICAgICA8QXR0cmliOkV4dElkPjU4ODkyMjQwLTg4NGMtNGI3ZS05MmYwLWM2Mzg5NzcyY2ExZjwvQXR0cmliOkV4dElkPgogICAgIDxBdHRyaWI6RmJJZD41MjUyNjU5MTQxNzk1ODA8L0F0dHJpYjpGYklkPgogICAgIDxBdHRyaWI6VG91Y2hUeXBlPjI8L0F0dHJpYjpUb3VjaFR5cGU+CiAgICA8L3JkZjpsaT4KICAgPC9yZGY6U2VxPgogIDwvQXR0cmliOkFkcz4KIDwvcmRmOkRlc2NyaXB0aW9uPgoKIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PScnCiAgeG1sbnM6ZGM9J2h0dHA6Ly9w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" }
   };
   function badgeImg(badgeId, size) {
     var def = BADGE_DEFS[badgeId] || { name: badgeId, color: "#999999" };
     var s = size || 48;
     var d = document.createElement("div");
-    d.style.cssText = "display:inline-block;width:" + s + "px;height:" + s + "px;border-radius:50%;background:" + def.color + ";border:3px solid #111;text-align:center;line-height:" + s + "px;font-size:" + Math.round(s/2) + "px;margin:4px;vertical-align:middle;";
-    d.textContent = "\u2605";
+    d.style.cssText = "display:inline-block;width:" + s + "px;height:" + s + "px;margin:4px;vertical-align:middle;";
     d.title = def.name;
+    if (def.img) {
+      var im = document.createElement("img");
+      im.src = def.img;
+      im.style.cssText = "width:" + s + "px;height:" + s + "px;";
+      im.alt = def.name;
+      d.appendChild(im);
+    } else {
+      d.style.cssText += "border-radius:50%;background:" + def.color + ";border:3px solid #111;text-align:center;line-height:" + s + "px;font-size:" + Math.round(s/2) + "px;";
+      d.textContent = "\u2605";
+    }
     return d;
   }
   function renderMyBadges() {
@@ -13400,7 +13543,7 @@ function flairName(name, rec) {
         tx.textContent = censor(c.text || "");
         d.appendChild(nm);
         d.appendChild(tx);
-        if (auth.currentUser && (isMod || c.uid === myUid())) {
+        if (auth.currentUser && (canModerate() || c.uid === myUid())) {
           var del = document.createElement("button");
           del.className = "mini secondary";
           del.textContent = "delete";
@@ -13448,10 +13591,7 @@ function flairName(name, rec) {
   };
 
   /* ---------- muse assistant (founder only) ---------- */
-  function updateMuseBtn() {
-    var btn = document.getElementById("apps-muse-btn");
-    if (btn) { btn.classList.toggle("hidden", !isFounder); }
-  }
+  function updateMuseBtn() { document.getElementById("apps-muse-btn").classList.toggle("hidden", myUid() !== FOUNDER_UID); }
   document.getElementById("apps-muse-btn").onclick = function () { enterMuse(); };
   document.getElementById("muse-back-btn").onclick = function () { showScreen("apps-screen"); };
   document.getElementById("muse-send-btn").onclick = sendMuseCmd;
@@ -13499,6 +13639,191 @@ function flairName(name, rec) {
         box.appendChild(d);
       });
       box.scrollTop = box.scrollHeight;
+    });
+  }
+  /* ---------- apply to be a mod (MH applications) ---------- */
+  document.getElementById("apps-mhapply-btn").onclick = function () { enterMhApply(); };
+  document.getElementById("mhapply-back-btn").onclick = function () { showScreen("apps-screen"); };
+  function enterMhApply() {
+    showScreen("mhapply-screen");
+    var uid = myUid();
+    if (!uid) { return; }
+    var infoBox = document.getElementById("mhapply-info");
+    var formBox = document.getElementById("mhapply-form");
+    var statusBox = document.getElementById("mhapply-status");
+    var msgBox = document.getElementById("mhapply-msg");
+    infoBox.innerHTML = "<p>loading...</p>";
+    formBox.style.display = "none";
+    statusBox.innerHTML = "";
+    msgBox.textContent = "";
+    // get user info: account age, xp, past bans
+    db.ref("users/" + uid).once("value", function (usnap) {
+      var urec = usnap.val() || {};
+      var ageDays = urec.at ? Math.floor((Date.now() - urec.at) / 86400000) : 0;
+      db.ref("xp/" + uid).once("value", function (xsnap) {
+        var xp = (xsnap.val() && xsnap.val().xp) || 0;
+        db.ref("bans/" + uid).once("value", function (bsnap) {
+          var banRec = bsnap.val();
+          var pastBans = banRec ? 1 : 0;
+          var lastBanAt = banRec ? (banRec.at || 0) : 0;
+          var bannedRecently = lastBanAt && (Date.now() - lastBanAt) < 30 * 86400000;
+          infoBox.innerHTML = "<p>account age: <b>" + ageDays + " days</b> | xp: <b>" + xp + "</b> | past bans: <b>" + pastBans + "</b></p>";
+          // check for existing applications
+          db.ref("mhApplications").orderByChild("uid").equalTo(uid).once("value", function (asnap) {
+            var apps = asnap.val() || {};
+            var keys = Object.keys(apps);
+            var pending = null, lastRejected = 0;
+            for (var i = 0; i < keys.length; i++) {
+              var a = apps[keys[i]];
+              if (a.status === "pending") { pending = a; break; }
+              if (a.status === "rejected" && a.reviewedAt > lastRejected) { lastRejected = a.reviewedAt; }
+            }
+            if (pending) {
+              statusBox.innerHTML = "<p><b>You have a pending application.</b> chickn will review it soon.</p>";
+              return;
+            }
+            if (lastRejected && (Date.now() - lastRejected) < 7 * 86400000) {
+              var daysLeft = Math.ceil((7 * 86400000 - (Date.now() - lastRejected)) / 86400000);
+              statusBox.innerHTML = "<p>Your last application was not approved. You can reapply in " + daysLeft + " day(s).</p>";
+              return;
+            }
+            if (ageDays < 7) {
+              statusBox.innerHTML = "<p>Your account must be at least 7 days old to apply. (" + ageDays + "/7 days)</p>";
+              return;
+            }
+            if (bannedRecently) {
+              statusBox.innerHTML = "<p>You were banned recently. You can apply 30 days after your last ban.</p>";
+              return;
+            }
+            if (isModUid(uid) || isHelperUid(uid)) {
+              statusBox.innerHTML = "<p>You're already a mod/helper!</p>";
+              return;
+            }
+            formBox.style.display = "";
+          });
+        });
+      });
+    });
+  }
+  document.getElementById("mhapply-submit").onclick = function () {
+    var uid = myUid();
+    if (!uid) { return; }
+    var reasonEl = document.getElementById("mhapply-reason");
+    var reason = reasonEl.value.trim();
+    var msgBox = document.getElementById("mhapply-msg");
+    msgBox.textContent = "";
+    if (reason.length < 10) { msgBox.textContent = "Please write at least 10 characters."; msgBox.style.color = "#990000"; return; }
+    if (reason.length > 500) { msgBox.textContent = "Please keep it under 500 characters."; msgBox.style.color = "#990000"; return; }
+    if (filterHit(reason)) { msgBox.textContent = "keep it clean!"; msgBox.style.color = "#990000"; return; }
+    if (!document.getElementById("mhapply-rules").checked) { msgBox.textContent = "Please confirm you've read the rules."; msgBox.style.color = "#990000"; return; }
+    db.ref("users/" + uid).once("value", function (usnap) {
+      var urec = usnap.val() || {};
+      var ageDays = urec.at ? Math.floor((Date.now() - urec.at) / 86400000) : 0;
+      db.ref("xp/" + uid).once("value", function (xsnap) {
+        var xp = (xsnap.val() && xsnap.val().xp) || 0;
+        db.ref("bans/" + uid).once("value", function (bsnap) {
+          var pastBans = bsnap.val() ? 1 : 0;
+          var app = {
+            uid: uid,
+            name: displayName(),
+            reason: reason,
+            accountAgeDays: ageDays,
+            xp: xp,
+            pastBans: pastBans,
+            at: Date.now(),
+            status: "pending"
+          };
+          db.ref("mhApplications").push(app, function (err) {
+            if (!err) {
+              reasonEl.value = "";
+              document.getElementById("mhapply-rules").checked = false;
+              msgBox.textContent = "Application submitted! chickn will review it.";
+              msgBox.style.color = "green";
+              setTimeout(enterMhApply, 1500);
+            } else {
+              msgBox.textContent = "Failed to submit. Try again.";
+              msgBox.style.color = "#990000";
+            }
+          });
+        });
+      });
+    });
+  };
+  /* ---------- MH application review (founder only) ---------- */
+  function loadMhApplications() {
+    var box = document.getElementById("dash-mhapps-list");
+    box.innerHTML = "<p>loading...</p>";
+    db.ref("mhApplications").orderByChild("at").once("value", function (snap) {
+      var v = snap.val() || {};
+      var keys = Object.keys(v).sort(function (a, b) { return (v[b].at || 0) - (v[a].at || 0); });
+      box.innerHTML = "";
+      var pending = keys.filter(function (k) { return v[k].status === "pending"; });
+      if (!pending.length) { box.innerHTML = "<p>no pending applications</p>"; return; }
+      pending.forEach(function (k) {
+        var a = v[k];
+        var div = document.createElement("div");
+        div.style.border = "1px solid #ccc";
+        div.style.borderRadius = "8px";
+        div.style.padding = "8px";
+        div.style.marginBottom = "8px";
+        div.innerHTML = "<p><b>" + escapeHtml(a.name || "?") + "</b> (xp: " + (a.xp || 0) + ", age: " + (a.accountAgeDays || 0) + "d, bans: " + (a.pastBans || 0) + ")<br>" +
+          "<span style='font-size:0.9em;'>" + escapeHtml(a.reason || "") + "</span><br>" +
+          "<span style='font-size:0.8em;color:#666;'>" + new Date(a.at || 0).toLocaleString() + "</span></p>";
+        var ap = document.createElement("button");
+        ap.className = "mini secondary";
+        ap.textContent = "approve";
+        ap.style.marginRight = "8px";
+        ap.onclick = (function (appId, app) {
+          return function () {
+            askConfirm("Approve " + (app.name || "?") + " as mod helper?", function () {
+              var updates = {};
+              updates["helpers/" + app.uid] = { name: app.name, at: Date.now(), by: FOUNDER_UID };
+              updates["mhApplications/" + appId + "/status"] = "approved";
+              updates["mhApplications/" + appId + "/reviewedBy"] = FOUNDER_UID;
+              updates["mhApplications/" + appId + "/reviewedAt"] = Date.now();
+              updates["mhDecisions/" + app.uid + "/" + appId] = { approved: true, at: Date.now(), seen: false };
+              db.ref().update(updates, function () { loadMhApplications(); loadDashHelpers(); });
+            });
+          };
+        })(k, a);
+        var rj = document.createElement("button");
+        rj.className = "mini secondary";
+        rj.textContent = "reject";
+        rj.onclick = (function (appId, app) {
+          return function () {
+            askConfirm("Reject " + (app.name || "?") + "'s application?", function () {
+              var updates = {};
+              updates["mhApplications/" + appId + "/status"] = "rejected";
+              updates["mhApplications/" + appId + "/reviewedBy"] = FOUNDER_UID;
+              updates["mhApplications/" + appId + "/reviewedAt"] = Date.now();
+              updates["mhDecisions/" + app.uid + "/" + appId] = { approved: false, at: Date.now(), seen: false };
+              db.ref().update(updates, function () { loadMhApplications(); });
+            });
+          };
+        })(k, a);
+        div.appendChild(ap);
+        div.appendChild(rj);
+        box.appendChild(div);
+      });
+    });
+  }
+  /* ---------- check MH decisions on sign-in ---------- */
+  function checkMhDecisions() {
+    var uid = myUid();
+    if (!uid) { return; }
+    db.ref("mhDecisions/" + uid).once("value", function (snap) {
+      var v = snap.val() || {};
+      Object.keys(v).forEach(function (did) {
+        var d = v[did];
+        if (d && !d.seen) {
+          if (d.approved) {
+            alert("You're now a Mod Helper! You can delete messages and mute rule-breakers for up to 1 hour. Check the dashboard for your new powers.");
+          } else {
+            alert("Your mod helper application was not approved. You can reapply in 7 days.");
+          }
+          db.ref("mhDecisions/" + uid + "/" + did + "/seen").set(true);
+        }
+      });
     });
   }
   function escapeHtml(s) {
@@ -14021,7 +14346,7 @@ function flairName(name, rec) {
       submitReport(id, { name: s.name, text: s.text }, "suggestions", "suggestions");
     };
     row.appendChild(rep);
-    if (auth.currentUser && (isMod || s.uid === me)) {
+    if (auth.currentUser && (canModerate() || s.uid === me)) {
       var del = document.createElement("button");
       del.className = "mini secondary";
       del.textContent = "delete";
@@ -14105,7 +14430,7 @@ function flairName(name, rec) {
         d.appendChild(nm);
 
         d.appendChild(tx);
-        if (auth.currentUser && (isMod || c.uid === myUid())) {
+        if (auth.currentUser && (canModerate() || c.uid === myUid())) {
           var del = document.createElement("button");
           del.className = "tiny secondary";
           del.textContent = "delete";
@@ -14671,6 +14996,7 @@ function flairName(name, rec) {
       missedChecked = false;
       myXp = 0;
       isMod = false;
+      isHelper = false;
       isFounder = false;
       if (firstAuth) {
         firstAuth = false;
